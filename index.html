@@ -502,7 +502,9 @@ textarea { min-height: 96px; resize: vertical; line-height: 1.4; }
 @keyframes flash { 0% { filter: brightness(2.2); } 100% { filter: none; } }
 
 /* the home screen: the Today view on top, the countdown cards below */
-.todayview { transition: max-height 320ms var(--ease), opacity 260ms var(--ease); overflow: hidden; }
+.todayview { transition: max-height 320ms var(--ease), opacity 260ms var(--ease), padding 320ms var(--ease), margin 320ms var(--ease); overflow: hidden;
+  padding: 24px var(--s4) 56px; margin: -24px calc(-1 * var(--s4)) -56px; }   /* room inside the clip for the glass panel's shadow (the margins cancel the padding, so nothing moves) */
+.home.expanded .todayview { padding: 0; margin: 0; }
 .todayview .list { margin-top: 0; }
 .todaybar { display: none; align-items: center; gap: var(--s3); margin-top: var(--s2); padding: 10px 14px; border-radius: var(--r); background: var(--glass); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: inset 0 1px 0 var(--glass-edge), 0 1px 2px rgba(0,0,0,.05); font-size: var(--t-sm); }
 .todaybar b { font-weight: 600; }
@@ -510,9 +512,135 @@ textarea { min-height: 96px; resize: vertical; line-height: 1.4; }
 .todaybar .wxmini svg.i { width: 18px; height: 18px; color: var(--accent); }
 .todaybar .chev { color: var(--muted); }
 .home.expanded .todayview { max-height: 0 !important; opacity: 0; }
-.home.expanded .todaybar { display: flex; animation: rise var(--dur) var(--ease); position: sticky; top: calc(var(--topbar-h, 76px) + 4px); z-index: 4; }
+.home.expanded .todaybar { display: flex; animation: rise var(--dur) var(--ease); position: sticky; top: calc(var(--topbar-h, 0px) + 4px); z-index: 4; }
 .home.expanded .stackhead { display: none; }
-.stackhead { display: flex; align-items: baseline; justify-content: space-between; margin: var(--s6) 0 var(--s2); }
+.stackhead { display: flex; align-items: baseline; justify-content: space-between; margin: var(--s6) 0 var(--s2); position: relative; z-index: 1; }
+
+/* ---------- the upper half: a living sky, one glass panel, a weather scene ----------
+   The sky is a gradient picked by the time of day (dawn, day, dusk, night — from Google's sunrise and sunset when we have them)
+   and tinted by the weather. The glass panel blurs whatever is behind it, so the sky shows through softly. */
+:root {
+  --sky-dawn-1: #C6D4EE; --sky-dawn-2: #F1D2BE; --sky-dawn-3: #F6C29A;
+  --sky-day-1: #6FA6E8;  --sky-day-2: #A8CBF2;  --sky-day-3: #E6EEF7;
+  --sky-dusk-1: #8C8CCE; --sky-dusk-2: #DFA3B4; --sky-dusk-3: #F2B385;
+  --sky-night-1: #6C7CAB; --sky-night-2: #9AA8CC; --sky-night-3: #CBD4E7;
+  --sky-cloud: rgba(255,255,255,.62); --sky-storm-cloud: rgba(70,78,96,.45); --sky-star: rgba(255,255,255,.9);
+  --glass-2: rgba(255,255,255,.5); --glass-rim: rgba(255,255,255,.7); --glass-shine: rgba(255,255,255,.6); --glass-cell: rgba(255,255,255,.42); --glass-ring: rgba(255,255,255,.75);
+  --tint-partly: rgba(150,160,178,.14); --tint-cloudy: rgba(140,150,168,.4); --tint-rain: rgba(68,86,114,.42); --tint-storm: rgba(28,32,48,.55); --tint-snow: rgba(232,236,244,.45);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --sky-dawn-1: #191735; --sky-dawn-2: #5C3853; --sky-dawn-3: #C7794D;
+  --sky-day-1: #10305E;  --sky-day-2: #27568F;  --sky-day-3: #4A7EBB;
+  --sky-dusk-1: #1B163F; --sky-dusk-2: #5A2E5D; --sky-dusk-3: #BD6446;
+  --sky-night-1: #05091B; --sky-night-2: #0E1837; --sky-night-3: #1A2A54;
+  --sky-cloud: rgba(255,255,255,.14); --sky-storm-cloud: rgba(20,24,36,.6); --sky-star: rgba(255,255,255,.85);
+  --glass-2: rgba(16,18,26,.56); --glass-rim: rgba(255,255,255,.16); --glass-shine: rgba(255,255,255,.14); --glass-cell: rgba(255,255,255,.06); --glass-ring: rgba(0,0,0,.4);
+  --tint-partly: rgba(120,130,150,.12); --tint-cloudy: rgba(110,120,140,.35); --tint-rain: rgba(40,52,74,.5); --tint-storm: rgba(10,12,20,.6); --tint-snow: rgba(200,208,224,.18);
+} }
+:root[data-theme="dark"] {
+  --sky-dawn-1: #191735; --sky-dawn-2: #5C3853; --sky-dawn-3: #C7794D;
+  --sky-day-1: #10305E;  --sky-day-2: #27568F;  --sky-day-3: #4A7EBB;
+  --sky-dusk-1: #1B163F; --sky-dusk-2: #5A2E5D; --sky-dusk-3: #BD6446;
+  --sky-night-1: #05091B; --sky-night-2: #0E1837; --sky-night-3: #1A2A54;
+  --sky-cloud: rgba(255,255,255,.14); --sky-storm-cloud: rgba(20,24,36,.6); --sky-star: rgba(255,255,255,.85);
+  --glass-2: rgba(16,18,26,.56); --glass-rim: rgba(255,255,255,.16); --glass-shine: rgba(255,255,255,.14); --glass-cell: rgba(255,255,255,.06); --glass-ring: rgba(0,0,0,.4);
+  --tint-partly: rgba(120,130,150,.12); --tint-cloudy: rgba(110,120,140,.35); --tint-rain: rgba(40,52,74,.5); --tint-storm: rgba(10,12,20,.6); --tint-snow: rgba(200,208,224,.18);
+}
+.home { position: relative; }
+.todayview { position: relative; z-index: 1; }
+.sky { position: absolute; z-index: 0; top: 0; left: calc(-1 * var(--s4)); right: calc(-1 * var(--s4)); height: var(--sky-h, 560px); overflow: hidden; pointer-events: none;
+  background: linear-gradient(180deg, var(--sky-1) 0%, var(--sky-2) 55%, var(--sky-3) 100%); transition: height 320ms var(--ease), opacity 260ms var(--ease); }
+.sky.p-dawn  { --sky-1: var(--sky-dawn-1);  --sky-2: var(--sky-dawn-2);  --sky-3: var(--sky-dawn-3); }
+.sky.p-day   { --sky-1: var(--sky-day-1);   --sky-2: var(--sky-day-2);   --sky-3: var(--sky-day-3); }
+.sky.p-dusk  { --sky-1: var(--sky-dusk-1);  --sky-2: var(--sky-dusk-2);  --sky-3: var(--sky-dusk-3); }
+.sky.p-night { --sky-1: var(--sky-night-1); --sky-2: var(--sky-night-2); --sky-3: var(--sky-night-3); }
+.sky > i { position: absolute; display: block; }
+.sky .orb { width: 200px; height: 200px; border-radius: 50%; background: radial-gradient(circle, rgba(255,226,130,.95) 0 15%, rgba(255,205,100,.45) 36%, rgba(255,190,90,0) 68%); filter: blur(3px); animation: breathe 7s ease-in-out infinite; }
+.sky.p-dawn .orb  { left: 4%; top: 46%; }
+.sky.p-day .orb   { right: 6%; top: -6%; }
+.sky.p-dusk .orb  { right: 2%; top: 38%; background: radial-gradient(circle, rgba(255,205,120,.95) 0 15%, rgba(250,150,90,.5) 36%, rgba(240,120,80,0) 68%); }
+.sky.p-night .orb { right: 10%; top: 4%; width: 130px; height: 130px; background: radial-gradient(circle, rgba(246,244,232,.95) 0 14%, rgba(230,232,240,.3) 32%, rgba(230,232,240,0) 62%); filter: blur(1.5px); }
+.sky.k-cloudy .orb, .sky.k-rain .orb, .sky.k-snow .orb { opacity: .4; }
+.sky.k-storm .orb { opacity: .18; }
+.sky .stars { inset: 0; opacity: 0; background-image: radial-gradient(1.6px 1.6px at 12% 14%, var(--sky-star) 60%, transparent), radial-gradient(1.2px 1.2px at 28% 32%, var(--sky-star) 60%, transparent), radial-gradient(1.8px 1.8px at 44% 9%, var(--sky-star) 60%, transparent), radial-gradient(1.2px 1.2px at 63% 26%, var(--sky-star) 60%, transparent), radial-gradient(1.5px 1.5px at 82% 40%, var(--sky-star) 60%, transparent), radial-gradient(1.2px 1.2px at 91% 12%, var(--sky-star) 60%, transparent), radial-gradient(1.4px 1.4px at 20% 52%, var(--sky-star) 60%, transparent), radial-gradient(1.2px 1.2px at 55% 46%, var(--sky-star) 60%, transparent); animation: twinkle 5s ease-in-out infinite; }
+.sky.p-night .stars, .sky.p-dusk .stars { opacity: .9; }
+.sky.p-dusk .stars { opacity: .35; }
+.sky.k-cloudy .stars, .sky.k-rain .stars, .sky.k-storm .stars, .sky.k-snow .stars { opacity: 0; }
+.sky .cl { height: 80px; width: 260px; border-radius: 999px; background: var(--sky-cloud); filter: blur(16px); opacity: 0; animation: drift 36s ease-in-out infinite alternate; }
+.sky .cl.c1 { left: -8%; top: 22%; }
+.sky .cl.c2 { right: -10%; top: 40%; width: 300px; animation-duration: 48s; animation-direction: alternate-reverse; }
+.sky .cl.c3 { left: 24%; top: 58%; width: 220px; height: 60px; animation-duration: 42s; }
+.sky.k-partly .cl.c1, .sky.k-partly .cl.c2 { opacity: .8; }
+.sky.k-cloudy .cl, .sky.k-rain .cl, .sky.k-snow .cl, .sky.k-storm .cl, .sky.k-wind .cl { opacity: 1; }
+.sky.k-rain .cl, .sky.k-storm .cl { background: var(--sky-storm-cloud); }
+.sky .tint { inset: 0; }
+.sky.k-partly .tint { background: var(--tint-partly); }
+.sky.k-cloudy .tint, .sky.k-wind .tint { background: var(--tint-cloudy); }
+.sky.k-rain .tint { background: var(--tint-rain); }
+.sky.k-storm .tint { background: var(--tint-storm); }
+.sky.k-snow .tint { background: var(--tint-snow); }
+.sky .fade { left: 0; right: 0; bottom: 0; height: 46%; background: linear-gradient(to bottom, transparent, var(--bg)); }
+.home.expanded .sky { height: calc(var(--topbar-h, 0px) + 132px); }
+@keyframes breathe { 50% { transform: scale(1.07); } }
+@keyframes twinkle { 50% { opacity: .55; } }
+@keyframes drift { to { transform: translateX(28px); } }
+
+/* the glass panel that holds the whole upper half */
+.glass { position: relative; margin-top: calc(var(--s3) + env(safe-area-inset-top, 0px)); padding: var(--s5) var(--s4) var(--s2); border-radius: 30px; overflow: hidden; box-shadow: 0 14px 36px rgba(10,14,28,.16); }
+/* the frosted layer itself (clipped to the rounded shape so the blur can't bleed past the corners) and the light catching the top edge */
+.glass::before { content: ""; position: absolute; inset: 0; border-radius: inherit; clip-path: inset(0 round 30px);
+  background: var(--glass-2); backdrop-filter: blur(24px) saturate(1.5); -webkit-backdrop-filter: blur(24px) saturate(1.5);
+  box-shadow: inset 0 1px 0 var(--glass-edge), inset 0 0 0 1px var(--glass-rim); }
+.glass::after { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; border-radius: inherit;
+  background: radial-gradient(120% 70% at 0% 0%, var(--glass-shine), transparent 58%), linear-gradient(180deg, rgba(255,255,255,.07), transparent 45%); }
+.glass > * { position: relative; z-index: 1; }
+.glass .inboxpill { position: absolute; top: 14px; right: 14px; z-index: 2; }
+.hello { text-align: center; }
+.hello .clock { font: 700 46px/1 var(--font-display); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.hello h1 { font: 700 var(--t-2xl)/1.1 var(--font-display); letter-spacing: -.01em; margin-top: 6px; text-wrap: balance; }
+.hello .date { font-size: var(--t-md); color: var(--ink-2); margin-top: 4px; }
+.hello .avstack { display: inline-flex; margin-top: 6px; }
+.hello .avstack .av { box-shadow: 0 0 0 2px var(--glass-ring); }
+.glass .wx { background: transparent; padding: var(--s2) 0; margin-top: var(--s3); border-radius: 0; min-height: 72px; }
+.glass .wx.wx-empty { padding: var(--s2) var(--s1); }
+.glass .divider { display: flex; align-items: center; gap: var(--s3); margin: var(--s2) 0 var(--s3); font: 600 var(--t-xs)/1 var(--font-body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.glass .divider::before, .glass .divider::after { content: ""; flex: 1; height: 1px; background: var(--glass-line); }
+.glass .row { background: transparent; }
+.glass .row-face { background: var(--glass-cell); }
+.glass .avs .av { box-shadow: 0 0 0 2px var(--glass-ring); }
+.glass .empty.quiet { padding: var(--s3) var(--s4) var(--s2); }
+.glass .glassfoot { display: flex; justify-content: flex-end; margin-top: var(--s1); }
+.glass .glassfoot .link { font-size: var(--t-sm); font-weight: 600; color: var(--accent); min-height: 36px; padding: 0 var(--s2); }
+.topbar.clear { display: none; }
+
+/* the weather scene: a small square of sky whose sun, moon, clouds, rain, snow and lightning match right now */
+.scene { --sc-1: var(--sky-day-1); --sc-2: var(--sky-day-3); position: relative; width: 64px; height: 64px; border-radius: 18px; overflow: hidden; flex: none; background: linear-gradient(180deg, var(--sc-1), var(--sc-2)); box-shadow: inset 0 1px 0 rgba(255,255,255,.35), inset 0 0 0 1px rgba(255,255,255,.18); }
+.scene.p-dawn  { --sc-1: var(--sky-dawn-1);  --sc-2: var(--sky-dawn-3); }
+.scene.p-dusk  { --sc-1: var(--sky-dusk-1);  --sc-2: var(--sky-dusk-3); }
+.scene.p-night { --sc-1: var(--sky-night-1); --sc-2: var(--sky-night-3); }
+.scene.k-cloudy, .scene.k-rain, .scene.k-wind { filter: saturate(.7); }
+.scene.k-storm { filter: saturate(.6) brightness(.8); }
+.scene svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.scene [class^="sc-"] { transform-box: fill-box; transform-origin: center; }
+.scene .sc-sun { animation: breathe 5s ease-in-out infinite; }
+.scene .sc-rays { animation: spin 70s linear infinite; }
+.scene .sc-cloud { animation: sc-drift 6s ease-in-out infinite alternate; }
+.scene .sc-cloud.b { animation-duration: 8s; animation-direction: alternate-reverse; }
+.scene .sc-drop { animation: sc-fall 1.1s linear infinite; }
+.scene .sc-flake { animation: sc-fall 2.8s linear infinite; }
+.scene .sc-bolt { opacity: 0; animation: sc-flash 4.5s steps(1) infinite; }
+.scene .sc-star { animation: twinkle 3s ease-in-out infinite; }
+.scene .sc-gust { stroke-dasharray: 30 10; animation: sc-gust 2.4s linear infinite; }
+.wx-hero .glyph.scene { width: 76px; height: 76px; border-radius: 22px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes sc-drift { to { transform: translateX(3px); } }
+@keyframes sc-fall { 0% { transform: translateY(-3px); opacity: 0; } 25% { opacity: 1; } 100% { transform: translateY(7px); opacity: 0; } }
+@keyframes sc-flash { 0%, 100% { opacity: 0; } 48% { opacity: 1; } 56% { opacity: .15; } 60% { opacity: 1; } 78% { opacity: 0; } }
+@keyframes sc-gust { to { stroke-dashoffset: -40; } }
+@media (prefers-reduced-motion: reduce) {
+  .sky > i, .scene [class^="sc-"] { animation: none !important; }
+  .scene .sc-bolt, .scene .sc-drop, .scene .sc-flake { opacity: 1; }
+}
 .stackhead h2 { font: 600 var(--t-xs)/1 var(--font-body); letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
 .stackhead .hint { font-size: 12px; }
 /* the cards: soonest on top; each next card laps the bottom of the one before it */
@@ -554,6 +682,19 @@ textarea { min-height: 96px; resize: vertical; line-height: 1.4; }
 .card .routemap .hint { color: inherit; opacity: .8; }
 .card .actions { display: flex; gap: var(--s2); margin-top: var(--s3); }
 .card .actions .btn { flex: 1; }
+/* the two map tiles: dark street art, a glowing marker, the app's name — one opens Google Maps, one Apple Maps */
+.mapbtns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: var(--s3); }
+.mapbtn { position: relative; isolation: isolate; display: flex; align-items: center; gap: 10px; height: 62px; padding: 0 14px 0 12px; border-radius: 999px; overflow: hidden; color: #fff; text-decoration: none; background: #121826; box-shadow: 0 6px 16px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.14), inset 0 0 0 1px rgba(255,255,255,.06); transition: transform 140ms var(--ease); }
+.mapbtn:active { transform: scale(.97); }
+.mapbtn .mapbg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; }
+.mapbtn .marker { width: 36px; height: 36px; flex: none; display: grid; place-items: center; }
+.mapbtn .marker svg { width: 30px; height: 30px; overflow: visible; }
+.mapbtn.g .marker { filter: drop-shadow(0 0 7px rgba(247,196,83,.85)) drop-shadow(0 0 16px rgba(247,196,83,.45)); }
+.mapbtn.a .marker { filter: drop-shadow(0 0 7px rgba(52,211,142,.85)) drop-shadow(0 0 16px rgba(52,211,142,.45)); }
+.mapbtn .txt { display: flex; flex-direction: column; line-height: 1; min-width: 0; }
+.mapbtn .txt b { font: 600 11px/1 var(--font-body); letter-spacing: .06em; text-transform: uppercase; opacity: .85; }
+.mapbtn .txt i { font: italic 700 21px/1 var(--font-display); letter-spacing: -.01em; margin-top: 3px; text-shadow: 0 1px 2px rgba(0,0,0,.5); }
+.sheet .mapbtns { margin-top: 8px; }
 .card .btn-primary { background: var(--ink-c); color: var(--c1); }
 .card .btn-ghost { background: var(--cell); border-color: transparent; color: inherit; }
 .card .bio { margin-top: var(--s3); padding: 12px 14px; border-radius: var(--r-sm); background: var(--cell); font-size: var(--t-sm); line-height: 1.5; }
@@ -961,11 +1102,9 @@ function renderTopbar() {
   requestAnimationFrame(() => document.documentElement.style.setProperty('--topbar-h', tb.offsetHeight + 'px'));   // the slim Today bar sticks just under the header
   const back = `<button class="iconbtn" data-act="tab" data-tab="today" aria-label="Back to Today">${icon('left')}</button>`;
   const add = label => `<button class="iconbtn" data-act="add-here" aria-label="${label}">${icon('plus')}</button>`;
+  tb.classList.toggle('clear', current === 'today');   // on Today the greeting lives inside the glass panel, so the header steps aside
   if (current === 'today') {
-    const stack = state.members.slice(0, 4).map(m => avatar(m.id)).join('');
-    const n = (state.captures || []).length;
-    tb.innerHTML = `<div><p class="eyebrow">${esc(state.familyName || 'Family Hub')} · ${WD[t.getDay()]}, ${MOS[t.getMonth()]} ${t.getDate()}</p><h1>${greeting()}</h1></div>
-      <div style="display:flex;align-items:center;gap:6px">${n ? `<button class="inboxpill" data-act="open-sheet" data-kind="inbox" aria-label="${n} captured item${n === 1 ? '' : 's'} to sort">${icon('inbox')}${n}</button>` : ''}<button class="avstack" data-act="tab" data-tab="family" aria-label="Family settings">${stack || icon('users')}</button></div>`;
+    tb.innerHTML = '';
   } else if (current === 'calendar') {
     const n = state.events.filter(e => { const d = daysFromToday(e.date); return d >= 0 && d < 7; }).length;
     tb.innerHTML = `<div><h1>Calendar</h1><p class="sub">${n ? `${n} event${n === 1 ? '' : 's'} in the next 7 days` : 'Nothing in the next 7 days'}</p></div>
@@ -1033,22 +1172,111 @@ function renderToday() {
     : `<div class="stack-empty">${emptyState({ glyph: 'clock', title: 'Nothing to count down to', body: 'Add an event and its card appears here, counting down.', action: 'Add an event', act: 'data-act="open-sheet" data-kind="event"', quiet: true })}</div>`;
   if (expandedCardId && !cards.some(e => e.id === expandedCardId)) expandedCardId = null;
 
+  // --- the living sky and the glass panel that holds the whole upper half ---
+  const period = skyPeriod(), kind = skyKind(w && w.type);
+  skyShown = period;
+  const sky = `<div class="sky p-${period} k-${kind}" id="sky" aria-hidden="true"><i class="stars"></i><i class="orb"></i><i class="cl c1"></i><i class="cl c2"></i><i class="cl c3"></i><i class="tint"></i><i class="fade"></i></div>`;
+  const members = state.members.slice(0, 4).map(m => avatar(m.id)).join('');
+  const n = (state.captures || []).length;
+  const inbox = n ? `<button class="inboxpill" data-act="open-sheet" data-kind="inbox" aria-label="${n} captured item${n === 1 ? '' : 's'} to sort">${icon('inbox')}${n}</button>` : '';
+  const fam = familyShort();
+  const hello = `<div class="hello">
+      <div class="clock" id="bigclock">${clock(Date.now())}</div>
+      <h1>${greeting()}${fam ? `, ${esc(fam)}` : ''}</h1>
+      <p class="date">${WD[t.getDay()]}, ${MONTHS[t.getMonth()]} ${t.getDate()}</p>
+      <button class="avstack" data-act="tab" data-tab="family" aria-label="Family settings">${members || icon('users')}</button>
+    </div>`;
+
   $('#screen-today').innerHTML = `<div class="home${expandedCardId ? ' expanded' : ''}" id="home">
+    ${sky}
     ${bar}
     <div class="todayview" id="todayview">
-      ${weatherStrip()}
-      <div class="sec"><h2>Today</h2><button class="link" data-act="tab" data-tab="calendar">Calendar</button></div>
-      ${agenda}
+      <section class="glass" aria-label="Today">
+        ${inbox}
+        ${hello}
+        ${weatherStrip()}
+        <div class="divider">Today</div>
+        ${agenda}
+        <div class="glassfoot"><button class="link" data-act="tab" data-tab="calendar">Calendar</button></div>
+      </section>
     </div>
     <div class="stackhead"><h2>Coming up</h2><span class="hint">${cards.length > 1 ? 'Tap a card to open it' : ''}</span></div>
     ${stack}
   </div>`;
   const tv = $('#todayview');
   if (!expandedCardId) tv.style.maxHeight = 'none';
+  sizeSky();
   wireRows($('#screen-today'));
   tickCountdown();
   mountCard();       // the open card's map and place details, if any
   syncGoogle();      // fetch weather / drive times if what we have is stale (does nothing without a key)
+}
+// The sky runs from the top of the screen to just past the glass panel, then fades into the app's ground.
+function sizeSky() {
+  const sky = $('#sky'), tv = $('#todayview'), g = $('#todayview .glass');
+  if (!sky || !tv || !g) return;
+  requestAnimationFrame(() => sky.style.setProperty('--sky-h', `${tv.offsetTop + g.offsetTop + g.offsetHeight + 36}px`));
+}
+// "The Riveras" → "Riveras", so the greeting reads "Good morning, Riveras".
+function familyShort() { return (state.familyName || '').trim().replace(/^the\s+/i, ''); }
+// Which part of the day it is, from Google's sunrise and sunset for today when we have them (6:45 and 7:30 otherwise).
+let skyShown = '';
+function skyPeriod(now = new Date()) {
+  const w = gcache.weather, d0 = w && w.days && w.days.find(d => d.date === isoDate(now));
+  let rise = d0 && d0.sunrise ? Date.parse(d0.sunrise) : NaN, set = d0 && d0.sunset ? Date.parse(d0.sunset) : NaN;
+  if (!(rise > 0) || !(set > 0)) {
+    rise = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 6, 45).getTime();
+    set = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 19, 30).getTime();
+  }
+  const ms = now.getTime(), H = 3600e3;
+  if (ms < rise - H || ms > set + H) return 'night';
+  if (ms < rise + 0.75 * H) return 'dawn';
+  if (ms > set - H) return 'dusk';
+  return 'day';
+}
+// Google's ~40 condition words folded into the seven skies we can draw.
+function skyKind(type) {
+  const t = type || '';
+  if (/THUNDER/.test(t)) return 'storm';
+  if (/SNOW|HAIL|SLEET|BLOWING|ICE/.test(t)) return 'snow';
+  if (/RAIN|SHOWER|DRIZZLE/.test(t)) return 'rain';
+  if (t === 'WINDY') return 'wind';
+  if (t === 'CLOUDY' || t === 'MOSTLY_CLOUDY') return 'cloudy';
+  if (t === 'PARTLY_CLOUDY') return 'partly';
+  return 'clear';
+}
+// The scene tile: a little square of the same sky, with the sun or moon where it really is, and whatever is falling.
+function sceneSvg(type, isDay = true, period = skyPeriod()) {
+  const kind = skyKind(type);
+  const night = period === 'night' || (isDay === false && period !== 'day');
+  const sunAt = { dawn: [22, 42], day: [42, 20], dusk: [42, 42], night: [42, 20] }[period] || [42, 20];
+  const [sx, sy] = sunAt;
+  const uid = 'sc' + Math.random().toString(36).slice(2, 7);
+  const dim = kind === 'cloudy' || kind === 'rain' || kind === 'snow' || kind === 'storm';
+  // the sun (with slow rays when the sky is clear) or the moon (a disc with a bite out of it)
+  let light = '';
+  if (night) {
+    light = `<g class="sc-moon" opacity="${dim ? .55 : 1}"><mask id="${uid}m"><rect width="64" height="64" fill="#fff"/><circle cx="${sx + 6}" cy="${sy - 5}" r="8" fill="#000"/></mask><circle cx="${sx}" cy="${sy}" r="9" fill="#F6F3E4" mask="url(#${uid}m)"/></g>`
+      + (dim ? '' : `<g class="sc-stars"><circle class="sc-star" cx="14" cy="14" r="1.2" fill="#fff"/><circle class="sc-star" cx="24" cy="30" r=".9" fill="#fff" style="animation-delay:-1s"/><circle class="sc-star" cx="54" cy="36" r="1" fill="#fff" style="animation-delay:-2s"/></g>`);
+  } else {
+    const rays = kind === 'clear' ? `<g class="sc-rays" stroke="#FFE08A" stroke-width="2" stroke-linecap="round" opacity=".9">${[0, 45, 90, 135, 180, 225, 270, 315].map(a => `<line x1="${sx}" y1="${sy - 13}" x2="${sx}" y2="${sy - 17}" transform="rotate(${a} ${sx} ${sy})"/>`).join('')}</g>` : '';
+    light = `<g class="sc-sun" opacity="${dim ? .5 : 1}">${dim ? '' : `<circle cx="${sx}" cy="${sy}" r="16" fill="#FFD466" opacity=".28"/>`}<circle cx="${sx}" cy="${sy}" r="9" fill="#FFD466"/></g>${rays}`;
+  }
+  // clouds: one for partly, two for the rest; grey when they carry rain or thunder
+  const cloudFill = kind === 'rain' || kind === 'storm' ? '#8F9BB0' : kind === 'snow' ? '#E4E9F2' : '#FFFFFF';
+  // (the placing transform sits on an outer group, so the drift animation on the inner one doesn't overwrite it)
+  const cloud = (x, y, s, cls) => `<g transform="translate(${x} ${y}) scale(${s})"><g class="sc-cloud ${cls}" fill="${cloudFill}" opacity=".95"><circle cx="10" cy="10" r="8"/><circle cx="20" cy="6" r="10"/><circle cx="30" cy="11" r="7"/><rect x="2" y="10" width="35" height="9" rx="4.5"/></g></g>`;
+  let clouds = '';
+  if (kind === 'partly') clouds = cloud(22, 30, 1, 'a');
+  else if (kind === 'wind') clouds = cloud(8, 14, .75, 'a');
+  else if (dim) clouds = cloud(4, 18, .8, 'b') + cloud(20, 26, 1, 'a');
+  // what falls out of them
+  let falling = '';
+  if (kind === 'rain' || kind === 'storm') falling = `<g class="sc-rain" stroke="#7FB0F5" stroke-width="2" stroke-linecap="round">${[26, 34, 42, 50].map((x, i) => `<line class="sc-drop" x1="${x}" y1="48" x2="${x - 2}" y2="54" style="animation-delay:${-i * .28}s"/>`).join('')}</g>`;
+  if (kind === 'snow') falling = `<g class="sc-snow" fill="#FFFFFF">${[26, 34, 42, 50].map((x, i) => `<circle class="sc-flake" cx="${x}" cy="51" r="1.8" style="animation-delay:${-i * .7}s"/>`).join('')}</g>`;
+  if (kind === 'storm') falling += `<polygon class="sc-bolt" points="38,38 31,50 36,50 33,60 44,45 38,45 41,38" fill="#FFD23F"/>`;
+  if (kind === 'wind') falling = `<g class="sc-wind" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" opacity=".9"><path class="sc-gust" d="M8 36h30a5 5 0 1 0-5-5"/><path class="sc-gust" d="M14 46h22a4 4 0 1 1-4 4" style="animation-delay:-.8s"/></g>`;
+  return `<svg viewBox="0 0 64 64" aria-hidden="true">${light}${clouds}${falling}</svg>`;
 }
 // Events for the card stack: anything that hasn't finished (an event counts for an hour after it starts), soonest first.
 function upcomingForCards() {
@@ -1076,9 +1304,10 @@ function cardHtml(e, i) {
     ${open ? `<button class="iconbtn pinbtn pin${pinned ? ' on' : ''}" data-act="pin-event" data-id="${e.id}" aria-label="${pinned ? 'Unpin' : 'Pin to the top'}" aria-pressed="${pinned}">${icon('pin')}</button>`
            : `<div class="soon" data-target="${at}">${soonLabel(ms)}<small>${ms <= 0 ? 'happening' : 'to go'}</small></div>`}</div>`;
   if (!open) return `<article class="card nested tone-${tone}" data-act="expand-card" data-id="${e.id}" role="button" tabindex="0" aria-expanded="false" aria-label="Open ${esc(e.title)}">${head}${pills}</article>`;
+  const dI = e.address ? driveInfo(e) : null;
   const directions = e.address ? `
-      <div class="routemap" id="routeMap"><p class="hint">${gcache.routes[routeKey(e)] && gcache.routes[routeKey(e)].polyline ? 'Loading the map…' : 'Getting the route…'}</p></div>
-      <div class="actions"><a class="btn btn-primary" href="${mapsLinks(e).google}" target="_blank" rel="noopener">${icon('nav')} Go</a><a class="btn btn-ghost" href="${mapsLinks(e).apple}" target="_blank" rel="noopener">Apple Maps</a></div>` : '';
+      ${dI && dI.here ? '' : `<div class="routemap" id="routeMap"><p class="hint">${gcache.routes[routeKey(e)] && gcache.routes[routeKey(e)].polyline ? 'Loading the map…' : 'Getting the route…'}</p></div>`}
+      ${mapButtons(e)}` : '';
   return `<article class="card expanded tone-${tone}" id="countdown" data-target="${at}" data-id="${e.id}" aria-expanded="true">
     ${head}${pills}
     <div class="digits" id="cdDigits">
@@ -1696,6 +1925,15 @@ function haptic(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catc
 
 // The countdown updates four numbers once a second instead of redrawing the whole screen.
 function tickCountdown() {
+  // the big clock on the glass panel, and a fresh sky when dawn, day, dusk or night arrives
+  const bc = $('#bigclock');
+  if (bc) {
+    const now = clock(Date.now());
+    if (bc.textContent !== now) {
+      bc.textContent = now;
+      if (skyShown && skyPeriod() !== skyShown) { renderToday(); return; }
+    }
+  }
   // the nested cards' corner labels ("1d 12h") first — cheap, and they must not go stale
   document.querySelectorAll('.card .soon[data-target]').forEach(el => {
     const ms = Number(el.dataset.target) - Date.now();
@@ -1717,6 +1955,7 @@ function tickCountdown() {
   $('#cd-d').textContent = pad(d); $('#cd-h').textContent = pad(h); $('#cd-m').textContent = pad(m); $('#cd-s').textContent = pad(s);
 }
 setInterval(() => { if (current === 'today') tickCountdown(); }, 1000);
+addEventListener('resize', () => { if (current === 'today') sizeSky(); });
 
 let toastTimer = null;
 function toast(msg, undo) {
@@ -2028,6 +2267,11 @@ function nudgeLine(e, { inCard = true } = {}) {
 }
 function agoShort(ts) { const m = Math.round((Date.now() - ts) / 60e3); return m < 1 ? 'just now' : m < 60 ? `${m}m ago` : `${Math.round(m / 60)}h ago`; }
 
+// The scene tile for "right now": the sky's period and the current condition, drawn small.
+function sceneTile(c) {
+  const period = skyPeriod();
+  return `<span class="glyph scene p-${period} k-${skyKind(c.type)}">${sceneSvg(c.type, c.isDay, period)}</span>`;
+}
 // The strip at the top of Today. Every state explains itself and leads somewhere.
 function weatherStrip() {
   const go = (title, body, glyph = 'wx-partly') => `<button class="wx wx-empty" data-act="tab" data-tab="family" aria-label="${esc(title)}"><span class="glyph">${icon(glyph)}</span><span class="grow"><span class="temp">${title}</span><span class="cond">${body}</span></span><span class="chev">${icon('right')}</span></button>`;
@@ -2042,7 +2286,7 @@ function weatherStrip() {
   const hi = typeof c.hi === 'number' ? `${Math.round(c.hi)}°` : '–', lo = typeof c.lo === 'number' ? `${Math.round(c.lo)}°` : '–';
   const stale = w.error ? ' · offline' : '';
   return `<button class="wx" data-act="open-sheet" data-kind="weather" aria-label="Weather: ${Math.round(c.temp)} degrees, ${esc(c.text)}. Tap for the forecast.">
-    <span class="glyph">${icon(wxIcon(c.type, c.isDay))}</span>
+    ${sceneTile(c)}
     <span class="grow"><span class="temp">${Math.round(c.temp)}°</span><span class="cond">${esc(c.text)} · feels ${Math.round(c.feels)}°${stale}</span></span>
     <span class="side">H <b>${hi}</b> L <b>${lo}</b><br>${icon('drop')} ${c.rain}% rain</span>
   </button>`;
@@ -2062,7 +2306,7 @@ function weatherSheet() {
     </div>`).join('');
   const d0 = w.days.find(d => d.date === ts);
   return `<h2 id="sheetTitle">Weather</h2>
-    <div class="wx-hero"><span class="glyph">${icon(wxIcon(c.type, c.isDay))}</span>
+    <div class="wx-hero">${sceneTile(c)}
       <div><div class="big">${Math.round(c.temp)}°</div><div class="txt">${esc(c.text)} · feels like ${Math.round(c.feels)}°</div></div></div>
     <div class="wx-stats">
       <div><b>${c.rain}%</b><span>Rain</span></div>
@@ -2090,7 +2334,7 @@ function routesNeeded() {
 function refreshRoute(e, force = false) {
   const k = routeKey(e), r = gcache.routes[k], at = parseDT(e.date, e.time).getTime();
   const ttl = at - Date.now() < 2 * 3600e3 ? ROUTE_TTL_SOON : ROUTE_TTL;
-  if (!force && r && r.sec && Date.now() - r.at < ttl) return Promise.resolve();
+  if (!force && r && (r.sec || r.found) && Date.now() - r.at < ttl) return Promise.resolve();
   if (!force && r && r.error && Date.now() - (r.errorAt || 0) < ERROR_TTL) return Promise.resolve();
   if (inflight[k]) return inflight[k];
   inflight[k] = (async () => {
@@ -2112,7 +2356,7 @@ function refreshRoute(e, force = false) {
       const leg = (route.legs || [])[0] || {};
       const end = leg.endLocation && leg.endLocation.latLng ? { lat: leg.endLocation.latLng.latitude, lng: leg.endLocation.latLng.longitude } : null;
       const steps = (leg.steps || []).filter(s => s.navigationInstruction && s.navigationInstruction.instructions).map(s => ({ text: s.navigationInstruction.instructions, meters: s.distanceMeters || 0, sec: parseInt(s.staticDuration, 10) || 0 }));
-      gcache.routes[k] = { at: Date.now(), eventAt: at, sec: parseInt(route.duration, 10) || 0, staticSec: parseInt(route.staticDuration, 10) || 0, meters: route.distanceMeters || 0, polyline: (route.polyline && route.polyline.encodedPolyline) || '', end, steps, error: null };
+      gcache.routes[k] = { at: Date.now(), eventAt: at, found: true, sec: parseInt(route.duration, 10) || 0, staticSec: parseInt(route.staticDuration, 10) || 0, meters: route.distanceMeters || 0, polyline: (route.polyline && route.polyline.encodedPolyline) || '', end, steps, error: null };
     } catch (err) {
       gcache.routes[k] = { ...(r || { eventAt: at }), error: err.message, errorAt: Date.now() };
     }
@@ -2132,6 +2376,7 @@ function driveInfo(e) {
   const at = parseDT(e.date, e.time).getTime(), now = Date.now();
   if (at < now || at - now > ROUTE_HORIZON) return null;
   const r = gcache.routes[routeKey(e)];
+  if (r && r.found && !r.sec && (r.meters || 0) < 80) return { tone: 'quiet', label: 'Already here · no drive', min: null, here: true };   // the address is home
   if (!r || (!r.sec && !r.error)) return { tone: 'quiet', label: 'Checking drive…', min: null };
   if (!r.sec) return { tone: 'quiet', label: 'No route found', min: null, error: r.error };
   // a wet drive moves "leave by" earlier (rainMin says by how much, so the screen can explain it)
@@ -2174,16 +2419,41 @@ function mapsLinks(e) {
     apple: `https://maps.apple.com/?saddr=${encodeURIComponent(origin)}&daddr=${encodeURIComponent(e.address)}&dirflg=d`,
   };
 }
+// The two map tiles under a route: dark street art (drawn here, not a real map), a glowing marker, and the app's name.
+function mapTileSvg(kind) {
+  const streets = kind === 'g'
+    ? `<rect width="240" height="62" fill="#121826"/>
+       <g stroke="#28324A" stroke-width="5" fill="none" stroke-linecap="round"><path d="M-10 50L74-8"/><path d="M44 72L136-10"/><path d="M114 72L206-10"/><path d="M184 72L262-6"/></g>
+       <g stroke="#1E2740" stroke-width="2.5" fill="none"><path d="M-10 36L250 8"/><path d="M-10 20L250 44"/><path d="M22-10L62 72"/><path d="M152-10L192 72"/></g>
+       <rect x="88" y="20" width="34" height="20" rx="4" fill="#182036"/><rect x="160" y="36" width="28" height="18" rx="4" fill="#182036"/>
+       <path d="M-10 54C60 42 130 46 250 18" stroke="#B48B2E" stroke-width="4" fill="none" opacity=".9"/>`
+    : `<rect width="240" height="62" fill="#111A22"/>
+       <path d="M140 62C165 34 205 40 250 6V62z" fill="#0F2C3E"/><ellipse cx="58" cy="52" rx="34" ry="13" fill="#123222"/>
+       <g stroke="#2A3A4C" stroke-width="5" fill="none" stroke-linecap="round"><path d="M-10 46L80-8"/><path d="M50 72L146-10"/><path d="M120 72L214-10"/></g>
+       <g stroke="#20303F" stroke-width="2.5" fill="none"><path d="M-10 30L250 12"/><path d="M-10 14L250 40"/><path d="M28-10L70 72"/><path d="M164-10L204 72"/></g>
+       <rect x="96" y="16" width="30" height="20" rx="4" fill="#182634"/>
+       <path d="M-10 58C70 36 140 42 250 22" stroke="#4E5F78" stroke-width="4" fill="none" opacity=".95"/>`;
+  return `<svg class="mapbg" viewBox="0 0 240 62" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${streets}</svg>`;
+}
+function mapButtons(e) {
+  const links = mapsLinks(e);
+  const pin = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c-4 0-7 3-7 7 0 5.5 7 12 7 12s7-6.5 7-12c0-4-3-7-7-7z" fill="#F7C453"/><circle cx="12" cy="9.5" r="2.7" fill="#3E2A00"/></svg>`;
+  const dot = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="#34D38E"/><circle cx="12" cy="12" r="4" fill="#0B2A1C"/><circle cx="12" cy="12" r="1.6" fill="#fff"/></svg>`;
+  return `<div class="mapbtns">
+    <a class="mapbtn g" href="${links.google}" target="_blank" rel="noopener" aria-label="Open the route in Google Maps">${mapTileSvg('g')}<span class="marker">${pin}</span><span class="txt"><b>Google</b><i>maps</i></span></a>
+    <a class="mapbtn a" href="${links.apple}" target="_blank" rel="noopener" aria-label="Open the route in Apple Maps">${mapTileSvg('a')}<span class="marker">${dot}</span><span class="txt"><b>Apple</b><i>maps</i></span></a>
+  </div>`;
+}
 function directionsHtml(e) {
   if (!gset.apiKey || !hasHome()) return `<p class="hint">Add your Google key and home address in Family settings to get directions.</p>`;
   const r = gcache.routes[routeKey(e)], d = driveInfo(e), links = mapsLinks(e);
-  const go = `<div class="actions" style="margin-top:8px"><a class="btn btn-primary" href="${links.google}" target="_blank" rel="noopener">${icon('nav')} Go</a><a class="btn btn-ghost" href="${links.apple}" target="_blank" rel="noopener">Apple Maps</a></div>`;
+  const go = mapButtons(e);
   if (!d) return `<p class="hint">Directions appear during the week before the event.</p>${go}`;
   const head = d.min == null
     ? `<p class="hint">${esc(d.error ? friendlyError(d.error) : d.label)}</p>`
     : `<div class="dirhead"><span class="big${d.tone === 'danger' ? ' late' : ''}">${d.min} min</span><span class="hint">${distanceLabel(d.meters)}${trafficLabel(r)} · ${d.tone === 'danger' ? 'leave now' : 'leave by ' + clock(d.leaveAt)}${esc(rainMinLabel(d))}</span></div>`;
-  const map = `<div class="routemap" id="routeMap"><p class="hint">${r && r.polyline ? 'Loading the map…' : 'Getting the route…'}</p></div>`;
-  const steps = r && r.steps && r.steps.length ? `<ol class="steps">${r.steps.map(s => `<li><span>${esc(s.text)}</span><span class="hint">${distanceLabel(s.meters)}</span></li>`).join('')}</ol>` : '';
+  const map = d.here ? '' : `<div class="routemap" id="routeMap"><p class="hint">${r && r.polyline ? 'Loading the map…' : 'Getting the route…'}</p></div>`;
+  const steps = !d.here && r && r.steps && r.steps.length ? `<ol class="steps">${r.steps.map(s => `<li><span>${esc(s.text)}</span><span class="hint">${distanceLabel(s.meters)}</span></li>`).join('')}</ol>` : '';
   return head + nudgeLine(e, { inCard: false }) + go + map + steps;
 }
 async function mountDirections(e) {
@@ -2191,7 +2461,7 @@ async function mountDirections(e) {
   const at = parseDT(e.date, e.time).getTime();
   if (at < Date.now() || at - Date.now() > ROUTE_HORIZON) return;
   let r = gcache.routes[routeKey(e)];
-  if (!r || !r.polyline) {                       // older cache entries have no shape or steps — ask once more
+  if (!r || (!r.polyline && !r.found)) {         // older cache entries have no shape or steps — ask once more (a zero-length "already here" answer is kept)
     await refreshRoute(e, true);
     if (!(sheetKind === 'event' && sheetId === e.id)) return;
     const box = $('#dirBox'); if (box) box.innerHTML = directionsHtml(e);
