@@ -506,7 +506,7 @@ textarea { min-height: 96px; resize: vertical; line-height: 1.4; }
   padding: 24px var(--s4) 56px; margin: -24px calc(-1 * var(--s4)) -56px; }   /* room inside the clip for the glass panel's shadow (the margins cancel the padding, so nothing moves) */
 .home.expanded .todayview { padding: 0; margin: 0; }
 .todayview .list { margin-top: 0; }
-.todaybar { display: none; align-items: center; gap: var(--s3); margin-top: var(--s2); padding: 10px 14px; border-radius: var(--r); background: var(--glass); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: inset 0 1px 0 var(--glass-edge), 0 1px 2px rgba(0,0,0,.05); font-size: var(--t-sm); }
+.todaybar { display: none; align-items: center; gap: var(--s3); width: 100%; text-align: left; margin-top: var(--s2); padding: 10px 14px; border-radius: var(--r); background: var(--glass); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: inset 0 1px 0 var(--glass-edge), 0 1px 2px rgba(0,0,0,.05); font-size: var(--t-sm); }
 .todaybar b { font-weight: 600; }
 .todaybar .wxmini { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .todaybar .wxmini svg.i { width: 18px; height: 18px; color: var(--accent); }
@@ -514,7 +514,7 @@ textarea { min-height: 96px; resize: vertical; line-height: 1.4; }
 .home.expanded .todayview { max-height: 0 !important; opacity: 0; }
 .home.expanded .todaybar { display: flex; animation: rise var(--dur) var(--ease); position: sticky; top: calc(var(--topbar-h, 0px) + 4px); z-index: 4; }
 .home.expanded .stackhead { display: none; }
-.stackhead { display: flex; align-items: baseline; justify-content: space-between; margin: var(--s6) 0 var(--s2); position: relative; z-index: 1; }
+.stackhead { display: flex; align-items: baseline; justify-content: space-between; margin: var(--s4) 0 var(--s2); position: relative; z-index: 1; }
 
 /* ---------- the upper half: a living sky, one glass panel, a weather scene ----------
    The sky is a gradient picked by the time of day (dawn, day, dusk, night — from Google's sunrise and sunset when we have them)
@@ -586,31 +586,43 @@ textarea { min-height: 96px; resize: vertical; line-height: 1.4; }
 @keyframes drift { to { transform: translateX(28px); } }
 
 /* the glass panel that holds the whole upper half */
-.glass { position: relative; margin-top: calc(var(--s3) + env(safe-area-inset-top, 0px)); padding: var(--s5) var(--s4) var(--s2); border-radius: 30px; overflow: hidden; box-shadow: 0 14px 36px rgba(10,14,28,.16); }
-/* the frosted layer itself (clipped to the rounded shape so the blur can't bleed past the corners) and the light catching the top edge */
+.glass { position: relative; margin-top: calc(var(--s3) + env(safe-area-inset-top, 0px)); padding: var(--s4) var(--s4) var(--s2); border-radius: 30px; overflow: hidden; box-shadow: 0 14px 36px rgba(10,14,28,.14); }
+/* the frosted layer itself (clipped to the rounded shape so the blur can't bleed past the corners). No rim line: the panel is a soft slab, not a framed card. */
 .glass::before { content: ""; position: absolute; inset: 0; border-radius: inherit; clip-path: inset(0 round 30px);
-  background: var(--glass-2); backdrop-filter: blur(24px) saturate(1.5); -webkit-backdrop-filter: blur(24px) saturate(1.5);
-  box-shadow: inset 0 1px 0 var(--glass-edge), inset 0 0 0 1px var(--glass-rim); }
+  background: var(--glass-2); backdrop-filter: blur(24px) saturate(1.5); -webkit-backdrop-filter: blur(24px) saturate(1.5); }
 .glass::after { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; border-radius: inherit;
   background: radial-gradient(120% 70% at 0% 0%, var(--glass-shine), transparent 58%), linear-gradient(180deg, rgba(255,255,255,.07), transparent 45%); }
 .glass > * { position: relative; z-index: 1; }
-.glass .inboxpill { position: absolute; top: 14px; right: 14px; z-index: 2; }
+.glass .inboxpill { position: absolute; top: 12px; right: 12px; z-index: 2; }
+/* the greeting block, kept short: a 36px clock, the greeting, the date */
 .hello { text-align: center; }
-.hello .clock { font: 700 46px/1 var(--font-display); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
-.hello h1 { font: 700 var(--t-2xl)/1.1 var(--font-display); letter-spacing: -.01em; margin-top: 6px; text-wrap: balance; }
-.hello .date { font-size: var(--t-md); color: var(--ink-2); margin-top: 4px; }
-.hello .avstack { display: inline-flex; margin-top: 6px; }
-.hello .avstack .av { box-shadow: 0 0 0 2px var(--glass-ring); }
-.glass .wx { background: transparent; padding: var(--s2) 0; margin-top: var(--s3); border-radius: 0; min-height: 72px; }
+.hello .clock { font: 700 36px/1 var(--font-display); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.hello h1 { font: 700 var(--t-xl)/1.15 var(--font-display); letter-spacing: -.01em; margin-top: 3px; text-wrap: balance; }
+.hello .date { font-size: var(--t-sm); color: var(--ink-2); margin-top: 2px; }
+.glass .wx { background: transparent; padding: var(--s1) 0; margin-top: var(--s2); border-radius: 0; min-height: 62px; }
+.glass .wx .scene { width: 54px; height: 54px; border-radius: 16px; }
+.glass .wx .temp { font-size: 30px; }
 .glass .wx.wx-empty { padding: var(--s2) var(--s1); }
-.glass .divider { display: flex; align-items: center; gap: var(--s3); margin: var(--s2) 0 var(--s3); font: 600 var(--t-xs)/1 var(--font-body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
-.glass .divider::before, .glass .divider::after { content: ""; flex: 1; height: 1px; background: var(--glass-line); }
+/* the Today row: one line that says what the day holds; tap it and the list unfolds underneath */
+.todayfold { display: flex; align-items: center; gap: var(--s2); width: 100%; min-height: 44px; padding: 0 var(--s1); margin-top: var(--s1); text-align: left; border-top: 1px solid var(--glass-line); }
+.todayfold .lbl { font: 600 var(--t-xs)/1 var(--font-body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.todayfold .sum { flex: 1; min-width: 0; font-size: var(--t-sm); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.todayfold .sum small { font-weight: 500; color: var(--ink-2); }
+.todayfold .chev { color: var(--muted); display: grid; place-items: center; transition: transform var(--dur) var(--ease); }
+.todayfold[aria-expanded="true"] .chev { transform: rotate(180deg); }
+.todaylist { overflow: hidden; max-height: 0; opacity: 0; transition: max-height 320ms var(--ease), opacity 240ms var(--ease); }
+.todaylist.open { max-height: 1400px; opacity: 1; }
+.todaylist .list { margin-top: var(--s1); }
 .glass .row { background: transparent; }
 .glass .row-face { background: var(--glass-cell); }
 .glass .avs .av { box-shadow: 0 0 0 2px var(--glass-ring); }
 .glass .empty.quiet { padding: var(--s3) var(--s4) var(--s2); }
-.glass .glassfoot { display: flex; justify-content: flex-end; margin-top: var(--s1); }
+/* under the unfolded list: the family (avatars → Family settings) on the left, Calendar on the right */
+.glass .glassfoot { display: flex; align-items: center; justify-content: space-between; margin-top: var(--s2); }
 .glass .glassfoot .link { font-size: var(--t-sm); font-weight: 600; color: var(--accent); min-height: 36px; padding: 0 var(--s2); }
+.glass .glassfoot .famlink { height: 36px; padding: 0 var(--s2); font-size: var(--t-sm); font-weight: 600; color: var(--accent); }
+.glass .glassfoot .famlink .av { width: 24px; height: 24px; font-size: 11px; box-shadow: 0 0 0 2px var(--glass-ring); }
+.glass .glassfoot .famlink span { margin-left: 10px; }
 .topbar.clear { display: none; }
 
 /* the weather scene: a small square of sky whose sun, moon, clouds, rain, snow and lightning match right now */
@@ -1184,8 +1196,14 @@ function renderToday() {
       <div class="clock" id="bigclock">${clock(Date.now())}</div>
       <h1>${greeting()}${fam ? `, ${esc(fam)}` : ''}</h1>
       <p class="date">${WD[t.getDay()]}, ${MONTHS[t.getMonth()]} ${t.getDate()}</p>
-      <button class="avstack" data-act="tab" data-tab="family" aria-label="Family settings">${members || icon('users')}</button>
     </div>`;
+  // the Today row: folded when the app opens, one line of counts; tap it and the day's list unfolds underneath.
+  // The family's avatars (the way into Family settings) live at the foot of that list, so the folded panel stays clean.
+  const sum = bits === 'a clear day' ? 'A clear day <small>· nothing due</small>' : bits.charAt(0).toUpperCase() + bits.slice(1);
+  const fold = `<button class="todayfold" data-act="toggle-today" aria-expanded="${todayOpen}" aria-controls="todaylist"><span class="lbl">Today</span><span class="sum">${sum}</span><span class="chev">${icon('down')}</span></button>
+      <div class="todaylist${todayOpen ? ' open' : ''}" id="todaylist">${agenda}
+        <div class="glassfoot"><button class="avstack famlink" data-act="tab" data-tab="family" aria-label="Family settings">${members || icon('users')}<span>Family</span></button><button class="link" data-act="tab" data-tab="calendar">Calendar</button></div>
+      </div>`;
 
   $('#screen-today').innerHTML = `<div class="home${expandedCardId ? ' expanded' : ''}" id="home">
     ${sky}
@@ -1195,9 +1213,7 @@ function renderToday() {
         ${inbox}
         ${hello}
         ${weatherStrip()}
-        <div class="divider">Today</div>
-        ${agenda}
-        <div class="glassfoot"><button class="link" data-act="tab" data-tab="calendar">Calendar</button></div>
+        ${fold}
       </section>
     </div>
     <div class="stackhead"><h2>Coming up</h2><span class="hint">${cards.length > 1 ? 'Tap a card to open it' : ''}</span></div>
@@ -1300,29 +1316,33 @@ function cardHtml(e, i) {
   const when = `${longDate(e.date)} · ${timeLabel(e.time)}${e.where ? ` · ${esc(e.where)}` : ''}`;
   const eyebrow = pinned ? 'Pinned' : i === 0 ? 'Next up' : dayLabel(e.date);
   const pills = `<div class="pillrow">${wxPill(e)}${drivePill(e)}${e.who && e.who.length ? avatars(e.who) : ''}</div>`;
+  const lead = i === 0;                                 // the first card counts down even while it is nested; the rest show "2d 9h" in the corner
   const head = `<div class="head"><div class="grow"><p class="eyebrow">${eyebrow}</p><h3>${esc(e.title)}</h3><p class="when">${when}</p></div>
     ${open ? `<button class="iconbtn pinbtn pin${pinned ? ' on' : ''}" data-act="pin-event" data-id="${e.id}" aria-label="${pinned ? 'Unpin' : 'Pin to the top'}" aria-pressed="${pinned}">${icon('pin')}</button>`
-           : `<div class="soon" data-target="${at}">${soonLabel(ms)}<small>${ms <= 0 ? 'happening' : 'to go'}</small></div>`}</div>`;
-  if (!open) return `<article class="card nested tone-${tone}" data-act="expand-card" data-id="${e.id}" role="button" tabindex="0" aria-expanded="false" aria-label="Open ${esc(e.title)}">${head}${pills}</article>`;
+           : lead ? '' : `<div class="soon" data-target="${at}">${soonLabel(ms)}<small>${ms <= 0 ? 'happening' : 'to go'}</small></div>`}</div>`;
+  if (!open) return `<article class="card nested${lead ? ' lead' : ''} tone-${tone}" data-act="expand-card" data-id="${e.id}" role="button" tabindex="0" aria-expanded="false" aria-label="Open ${esc(e.title)}">${head}${pills}${lead ? digitsHtml(at) : ''}</article>`;
   const dI = e.address ? driveInfo(e) : null;
   const directions = e.address ? `
       ${dI && dI.here ? '' : `<div class="routemap" id="routeMap"><p class="hint">${gcache.routes[routeKey(e)] && gcache.routes[routeKey(e)].polyline ? 'Loading the map…' : 'Getting the route…'}</p></div>`}
       ${mapButtons(e)}` : '';
-  return `<article class="card expanded tone-${tone}" id="countdown" data-target="${at}" data-id="${e.id}" aria-expanded="true">
+  return `<article class="card expanded tone-${tone}" data-id="${e.id}" aria-expanded="true">
     ${head}${pills}
-    <div class="digits" id="cdDigits">
-      <div class="d"><b id="cd-d">00</b><span>days</span></div>
-      <div class="d"><b id="cd-h">00</b><span>hours</span></div>
-      <div class="d"><b id="cd-m">00</b><span>min</span></div>
-      <div class="d"><b id="cd-s">00</b><span>sec</span></div>
-    </div>
-    <p class="now" id="cdNow" hidden>Happening now</p>
+    ${digitsHtml(at)}
     ${driveLine(e)}
     ${nudgeLine(e)}
     ${directions}
     ${bioHtml(e)}
     <div class="foot"><button data-act="open-sheet" data-kind="event" data-id="${e.id}">${icon('pencil')} Edit event</button><button data-act="collapse-card">${icon('up')} Close</button></div>
   </article>`;
+}
+// The four-number countdown. Every copy on the screen carries its own target time and is ticked by tickCountdown().
+function digitsHtml(at) {
+  return `<div class="digits" data-target="${at}">
+      <div class="d"><b class="cd-d">00</b><span>days</span></div>
+      <div class="d"><b class="cd-h">00</b><span>hours</span></div>
+      <div class="d"><b class="cd-m">00</b><span>min</span></div>
+      <div class="d"><b class="cd-s">00</b><span>sec</span></div>
+    </div><p class="now" hidden>Happening now</p>`;
 }
 // The open card's map and place details are mounted after the screen is drawn.
 function mountCard() {
@@ -1765,6 +1785,7 @@ document.addEventListener('click', e => {
     /* v2: the home cards, the Lists switch, the header "+" */
     case 'expand-card': expandCard(id); break;
     case 'collapse-card': expandCard(null); break;
+    case 'toggle-today': toggleToday(); break;
     case 'lists-mode': listsMode = el.dataset.mode; render(); break;
     case 'add-here': { const fn = ADD_ACTIONS[current]; if (fn) fn(); break; }
     /* v2: the camera and the capture inbox */
@@ -1941,18 +1962,31 @@ function tickCountdown() {
     if (el.firstChild && el.firstChild.nodeType === 3) el.firstChild.nodeValue = label;
     if (small) small.textContent = ms <= 0 ? 'happening' : 'to go';
   });
-  const box = $('#countdown');
-  if (!box) return;
-  const target = Number(box.dataset.target);
-  const ms = target - Date.now();
-  const digits = $('#cdDigits'), now = $('#cdNow');
-  if (ms <= 0) {
-    if (ms < -3600e3) { renderToday(); return; }         // an hour after it started, move on to the next event
-    digits.hidden = true; now.hidden = false; return;
-  }
-  digits.hidden = false; now.hidden = true;
-  const d = Math.floor(ms / 86400e3), h = Math.floor(ms % 86400e3 / 3600e3), m = Math.floor(ms % 3600e3 / 60e3), s = Math.floor(ms % 60e3 / 1000);
-  $('#cd-d').textContent = pad(d); $('#cd-h').textContent = pad(h); $('#cd-m').textContent = pad(m); $('#cd-s').textContent = pad(s);
+  // every four-number countdown on the screen: the open card's, and the lead card's while it is nested
+  let moveOn = false;
+  document.querySelectorAll('.digits[data-target]').forEach(box => {
+    const ms = Number(box.dataset.target) - Date.now();
+    const now = box.nextElementSibling && box.nextElementSibling.classList.contains('now') ? box.nextElementSibling : null;
+    if (ms <= 0) {
+      if (ms < -3600e3) { moveOn = true; return; }        // an hour after it started, move on to the next event
+      box.hidden = true; if (now) now.hidden = false; return;
+    }
+    box.hidden = false; if (now) now.hidden = true;
+    const d = Math.floor(ms / 86400e3), h = Math.floor(ms % 86400e3 / 3600e3), m = Math.floor(ms % 3600e3 / 60e3), s = Math.floor(ms % 60e3 / 1000);
+    box.querySelector('.cd-d').textContent = pad(d); box.querySelector('.cd-h').textContent = pad(h); box.querySelector('.cd-m').textContent = pad(m); box.querySelector('.cd-s').textContent = pad(s);
+  });
+  if (moveOn) renderToday();
+}
+// The Today row: unfold or fold the day's list. An animation, not a redraw, so the rest of the panel holds still.
+// todayOpen is plain memory: it survives a trip to another tab, and starts folded every time the app opens or refreshes.
+let todayOpen = false;
+function toggleToday() {
+  todayOpen = !todayOpen;
+  const list = $('#todaylist'), btn = $('.todayfold');
+  if (list) list.classList.toggle('open', todayOpen);
+  if (btn) btn.setAttribute('aria-expanded', todayOpen);
+  setTimeout(sizeSky, 340);
+  haptic(6);
 }
 setInterval(() => { if (current === 'today') tickCountdown(); }, 1000);
 addEventListener('resize', () => { if (current === 'today') sizeSky(); });
