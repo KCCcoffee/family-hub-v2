@@ -583,15 +583,18 @@ textarea { min-height: 96px; resize: vertical; line-height: 1.4; }
 .sky.p-night .orb { right: -18px; top: calc(var(--sat) - 44px); width: 130px; height: 130px; background: radial-gradient(circle, rgba(246,244,232,.95) 0 14%, rgba(230,232,240,.3) 32%, rgba(230,232,240,0) 60%); filter: blur(1.5px); }
 .sky.k-cloudy .orb, .sky.k-rain .orb, .sky.k-snow .orb { opacity: .4; }
 .sky.k-storm .orb { opacity: .18; }
-.sky .stars { inset: 0; opacity: 0; background-image: radial-gradient(1.6px 1.6px at 12% 14%, var(--sky-star) 60%, transparent), radial-gradient(1.2px 1.2px at 28% 32%, var(--sky-star) 60%, transparent), radial-gradient(1.8px 1.8px at 44% 9%, var(--sky-star) 60%, transparent), radial-gradient(1.2px 1.2px at 63% 26%, var(--sky-star) 60%, transparent), radial-gradient(1.5px 1.5px at 82% 40%, var(--sky-star) 60%, transparent), radial-gradient(1.2px 1.2px at 91% 12%, var(--sky-star) 60%, transparent), radial-gradient(1.4px 1.4px at 20% 52%, var(--sky-star) 60%, transparent), radial-gradient(1.2px 1.2px at 55% 46%, var(--sky-star) 60%, transparent); animation: twinkle 5s ease-in-out infinite; }
-.sky.p-night .stars, .sky.p-dusk .stars { opacity: .9; }
-.sky.p-dusk .stars { opacity: .35; }
-.sky.k-cloudy .stars, .sky.k-rain .stars, .sky.k-storm .stars, .sky.k-snow .stars { opacity: 0; }
-.sky .cl { height: 80px; width: 260px; border-radius: 999px; background: var(--sky-cloud); filter: blur(16px); opacity: 0; animation: drift 36s ease-in-out infinite alternate; }
+/* eight stars, each its own point, so an opening can bring them out one by one; --st-o is how bright this sky lets them be */
+.sky .st { --st-o: 0; width: var(--s, 1.4px); height: var(--s, 1.4px); border-radius: 50%; background: var(--sky-star); opacity: var(--st-o); animation: twinkle 5s ease-in-out infinite calc(var(--i, 0) * -.7s); }
+.sky.p-night .st { --st-o: .9; }
+.sky.p-dusk .st { --st-o: .35; }
+.sky.k-cloudy .st, .sky.k-rain .st, .sky.k-storm .st, .sky.k-snow .st { --st-o: 0; }
+/* clouds: each drifts at its own pace and some drift the other way (--dd, --dn), so the sky never looks like it is on a loop;
+   every drift starts from the cloud's resting spot, so an opening can hand over to it without a jump */
+.sky .cl { height: 80px; width: 260px; border-radius: 999px; background: var(--sky-cloud); filter: blur(16px); opacity: 0; animation: var(--dn, drift) var(--dd, 36s) ease-in-out infinite alternate; }
 .sky .cl.c1 { left: -8%; top: calc(var(--sat) + 110px); }
-.sky .cl.c2 { right: -10%; top: calc(var(--sat) + 215px); width: 300px; animation-duration: 48s; animation-direction: alternate-reverse; }
-.sky .cl.c3 { left: 24%; top: calc(var(--sat) + 315px); width: 220px; height: 60px; animation-duration: 42s; }
-.sky .cl.c4 { right: 8%; top: 62%; width: 280px; height: 70px; animation-duration: 54s; animation-direction: alternate-reverse; }   /* a low one, behind the cards, so a cloudy sky is cloudy all the way down */
+.sky .cl.c2 { right: -10%; top: calc(var(--sat) + 215px); width: 300px; --dd: 48s; --dn: drift-r; }
+.sky .cl.c3 { left: 24%; top: calc(var(--sat) + 315px); width: 220px; height: 60px; --dd: 42s; }
+.sky .cl.c4 { right: 8%; top: 62%; width: 280px; height: 70px; --dd: 54s; --dn: drift-r; }   /* a low one, behind the cards, so a cloudy sky is cloudy all the way down */
 .sky.k-partly .cl.c1, .sky.k-partly .cl.c2 { opacity: .8; }
 .sky.k-cloudy .cl, .sky.k-rain .cl, .sky.k-snow .cl, .sky.k-storm .cl, .sky.k-wind .cl { opacity: 1; }
 .sky.p-night .cl { background: rgba(255,255,255,.16); }   /* night clouds stay faint, so white words stay readable over them */
@@ -602,9 +605,74 @@ textarea { min-height: 96px; resize: vertical; line-height: 1.4; }
 .sky.k-rain .tint { background: var(--tint-rain); }
 .sky.k-storm .tint { background: var(--tint-storm); }
 .sky.k-snow .tint { background: var(--tint-snow); }
+/* three layers that only show during an opening: a sheet of rain, a flurry of flakes, one flash of lightning */
+.sky .rain { inset: -340px 0 0; opacity: 0; background: repeating-linear-gradient(112deg, transparent 0 17px, rgba(255,255,255,.26) 17px 18.4px, transparent 18.4px 30px); }
+.sky .snow { left: 0; right: 0; top: -20%; height: 120%; opacity: 0; background-image:
+  radial-gradient(2.4px 2.4px at 8% 12%, #fff 60%, transparent), radial-gradient(2px 2px at 22% 40%, #fff 60%, transparent), radial-gradient(2.6px 2.6px at 36% 22%, #fff 60%, transparent), radial-gradient(2px 2px at 48% 58%, #fff 60%, transparent),
+  radial-gradient(2.4px 2.4px at 61% 10%, #fff 60%, transparent), radial-gradient(2px 2px at 72% 44%, #fff 60%, transparent), radial-gradient(2.6px 2.6px at 84% 26%, #fff 60%, transparent), radial-gradient(2px 2px at 93% 66%, #fff 60%, transparent),
+  radial-gradient(2.2px 2.2px at 15% 78%, #fff 60%, transparent), radial-gradient(2px 2px at 55% 86%, #fff 60%, transparent), radial-gradient(2.4px 2.4px at 78% 80%, #fff 60%, transparent); }
+.sky .flash { inset: 0; background: #fff; opacity: 0; }
 @keyframes breathe { 50% { transform: scale(1.07); } }
-@keyframes twinkle { 50% { opacity: .55; } }
+@keyframes twinkle { 50% { opacity: calc(var(--st-o, 1) * .55); } }
 @keyframes drift { to { transform: translateX(28px); } }
+@keyframes drift-r { to { transform: translateX(-28px); } }
+
+/* ---- The opening: what moves in the second after the app opens (or comes back after a while away).
+   The picks follow the data, so the motion tells you what the sky is doing right now:
+     dawn  → the sun rises into its corner            day   → the sun brightens into place
+     dusk  → the sun sinks into its corner while the first stars come out      night → the moon rises and the stars come out one by one
+     partly cloudy → one cloud drifts in from each side   cloudy → the sky greys over and thickens   windy → the clouds blow across
+     rain → the clouds roll in and a sheet of rain falls   snow → a flurry drifts down   thunderstorm → the clouds roll in, one soft flash, then the words
+   The words rise in line by line, starting almost at once ("Together" timing: the whole opening is done in about a second).
+   --f scales every duration, --td is when the words start, --el lets a redraw mid-opening pick up where it was (a negative delay).
+   Reduce Motion never gets any of this: the sky is simply there (the JS leaves the "go" classes off, and the rules below back that up). ---- */
+.home { --f: 1; --td: 120ms; --el: 0ms; }
+.sky.go.o-sky-fade { animation: op-sky-fade calc(450ms * var(--f)) var(--ease) both var(--el); }
+@keyframes op-sky-fade { from { opacity: 0; } }
+/* the sun or the moon: its slow breathing waits until it has arrived */
+.sky.go .orb { animation: var(--orb-anim), breathe 7s ease-in-out infinite calc(var(--orb-dur) + var(--el)); }
+.sky.go.o-orb-rise     { --orb-dur: calc(1000ms * var(--f)); --orb-anim: op-orb-rise var(--orb-dur) cubic-bezier(.2,.7,.2,1) both var(--el); }
+.sky.go.o-orb-bloom    { --orb-dur: calc(900ms * var(--f));  --orb-anim: op-orb-bloom var(--orb-dur) var(--ease) both var(--el); }
+.sky.go.o-orb-dip      { --orb-dur: calc(1200ms * var(--f)); --orb-anim: op-orb-dip var(--orb-dur) ease-in-out both var(--el); }
+.sky.go.o-orb-moonrise { --orb-dur: calc(1200ms * var(--f)); --orb-anim: op-orb-moonrise var(--orb-dur) cubic-bezier(.2,.7,.2,1) both var(--el); }
+@keyframes op-orb-rise { from { transform: translate(-50px, 130px) scale(.9); opacity: 0; } }       /* up the left edge, mostly off-screen until it reaches its corner */
+@keyframes op-orb-bloom { from { transform: scale(.2); opacity: 0; } }
+@keyframes op-orb-dip { from { transform: translateY(-70px); } }                                     /* sinks down into the corner, never near the words */
+@keyframes op-orb-moonrise { from { transform: translate(44px, 130px); opacity: 0; } }              /* up the right edge, off-screen until it is above the greeting */
+/* the stars */
+.sky.go.o-stars-sprinkle .st { animation: op-star-in calc(520ms * var(--f)) cubic-bezier(.2,.9,.3,1.2) both calc(var(--i) * 95ms * var(--f) + var(--el)), twinkle 5s ease-in-out infinite calc(var(--i) * 95ms * var(--f) + 600ms + var(--el)); }
+.sky.go.o-stars-late .st     { animation: op-star-in calc(520ms * var(--f)) cubic-bezier(.2,.9,.3,1.2) both calc(500ms * var(--f) + var(--i) * 80ms * var(--f) + var(--el)), twinkle 5s ease-in-out infinite calc(var(--i) * 80ms * var(--f) + 1200ms + var(--el)); }
+.sky.go.o-stars-fade .st     { animation: op-star-fade calc(800ms * var(--f)) var(--ease) both var(--el), twinkle 5s ease-in-out infinite calc(800ms * var(--f) + var(--el)); }
+@keyframes op-star-in { from { opacity: 0; transform: scale(0); } }
+@keyframes op-star-fade { from { opacity: 0; } }
+/* the clouds: the entrance first, then the slow drift takes over from exactly where the entrance ends */
+.sky.go .cl { animation: var(--cl-anim, none), var(--dn, drift) var(--dd, 36s) ease-in-out infinite alternate calc(var(--cl-dur, 0ms) + var(--cl-delay, 0ms) + var(--el)); }
+.sky.go.o-wx-driftin .cl.c1 { --cl-dur: calc(950ms * var(--f)); --cl-anim: op-cloud-l var(--cl-dur) var(--ease) both var(--el); }
+.sky.go.o-wx-driftin .cl.c2 { --cl-dur: calc(950ms * var(--f)); --cl-anim: op-cloud-r var(--cl-dur) var(--ease) both var(--el); }
+.sky.go.o-wx-driftin .cl.c3, .sky.go.o-wx-driftin .cl.c4 { --cl-dur: calc(950ms * var(--f)); --cl-anim: op-cloud-fade var(--cl-dur) var(--ease) both var(--el); }
+.sky.go.o-wx-thicken .cl { --cl-dur: calc(1100ms * var(--f)); --cl-anim: op-cloud-fade var(--cl-dur) ease-out both var(--el); }
+.sky.go.o-wx-gust .cl { --cl-dur: calc(700ms * var(--f)); --cl-delay: calc(var(--i, 0) * 80ms * var(--f)); --cl-anim: op-gust var(--cl-dur) cubic-bezier(.2,.9,.3,1.25) both calc(var(--cl-delay) + var(--el)); }
+.sky.go.o-wx-downpour .cl, .sky.go.o-wx-flash .cl { --cl-dur: calc(800ms * var(--f)); --cl-delay: calc(var(--i, 0) * 120ms * var(--f)); --cl-anim: op-cloud-roll var(--cl-dur) var(--ease) both calc(var(--cl-delay) + var(--el)); }
+.sky.go.o-wx-flurry .cl { --cl-dur: calc(900ms * var(--f)); --cl-anim: op-cloud-fade var(--cl-dur) var(--ease) both var(--el); }
+@keyframes op-cloud-l { from { transform: translateX(-190px); opacity: 0; } }
+@keyframes op-cloud-r { from { transform: translateX(190px); opacity: 0; } }
+@keyframes op-cloud-fade { from { opacity: 0; } }
+@keyframes op-cloud-roll { from { transform: translateX(-250px); opacity: 0; } }
+@keyframes op-gust { 0% { transform: translateX(-320px); opacity: 0; } 70% { transform: translateX(26px); } 100% { transform: none; } }
+/* the grey of an overcast, rainy or stormy sky settles in; the rain, the flurry and the flash play once */
+.sky.go.o-wx-thicken .tint { animation: op-tint calc(1000ms * var(--f)) ease-out both var(--el); }
+.sky.go.o-wx-downpour .tint { animation: op-tint calc(700ms * var(--f)) ease-out both calc(300ms * var(--f) + var(--el)); }
+.sky.go.o-wx-flash .tint { animation: op-tint calc(700ms * var(--f)) ease-out both var(--el); }
+.sky.go.o-wx-downpour .rain { animation: op-rain calc(1500ms * var(--f)) linear both calc(450ms * var(--f) + var(--el)); }
+.sky.go.o-wx-flurry .snow { animation: op-snow calc(2300ms * var(--f)) linear both calc(150ms * var(--f) + var(--el)); }
+.sky.go.o-wx-flash .flash { animation: op-flash calc(520ms * var(--f)) linear both calc(720ms * var(--f) + var(--el)); }
+@keyframes op-tint { from { opacity: 0; } }
+@keyframes op-rain { 0% { opacity: 0; transform: translateY(-300px); } 18% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; transform: none; } }
+@keyframes op-snow { 0% { opacity: 0; transform: translateY(-70px); } 15% { opacity: .95; } 85% { opacity: .95; } 100% { opacity: 0; transform: translateY(150px); } }
+@keyframes op-flash { 0%, 100% { opacity: 0; } 8% { opacity: .45; } 16% { opacity: .04; } 24% { opacity: .3; } 40% { opacity: 0; } }   /* one soft flash and its echo */
+/* the words: each line lifts into place, top to bottom, starting at --td */
+.hero.go .hello .clock { --i: 0; } .hero.go .hello h1 { --i: 1; } .hero.go .hello .date { --i: 2; } .hero.go > .wx { --i: 3; } .hero.go .todayfold { --i: 4; }
+.hero.go.o-text-rise .hello > *, .hero.go.o-text-rise > .wx, .hero.go.o-text-rise .todayfold { animation: rise calc(440ms * var(--f)) var(--ease) both calc(var(--td) + var(--i, 0) * 75ms * var(--f) + var(--el)); }
 
 /* Everything on the home screen sits straight on the sky: no panel, no box, no shadow — just the words, the weather and the cards over the gradient.
    Dark skies (night, rain, storms — the home screen carries "darksky" then — and every sky in dark mode) get light text with a whisper of shadow;
@@ -799,6 +867,11 @@ textarea { min-height: 96px; resize: vertical; line-height: 1.4; }
 
 @media (prefers-reduced-motion: reduce) {
   *:not(.sky > i), *::before, *::after { animation: none !important; transition: none !important; }   /* everything stops except the sky's slow breathing */
+  /* and the opening never plays: the sky's parts keep only their slow idle motion */
+  .sky.go .tint, .sky.go .rain, .sky.go .snow, .sky.go .flash { animation: none !important; }
+  .sky.go .orb { animation: breathe 7s ease-in-out infinite !important; }
+  .sky.go .cl { animation: var(--dn, drift) var(--dd, 36s) ease-in-out infinite alternate !important; }
+  .sky.go .st { animation: twinkle 5s ease-in-out infinite calc(var(--i, 0) * -.7s) !important; }
 }
 </style>
 
@@ -1323,7 +1396,8 @@ function renderToday() {
   // --- the living sky, and the upper half that sits straight on it ---
   const period = skyPeriod(), kind = skyKind(w && w.type);
   skyShown = period;
-  const sky = `<div class="sky p-${period} k-${kind}" id="sky" aria-hidden="true"><i class="stars"></i><i class="orb"></i><i class="cl c1"></i><i class="cl c2"></i><i class="cl c3"></i><i class="cl c4"></i><i class="tint"></i></div>`;
+  const op = opening(period, kind);   // the classes that make the sky's parts arrive (null once the opening is over, or with Reduce Motion)
+  const sky = `<div class="sky p-${period} k-${kind}${op ? op.sky : ''}" id="sky" aria-hidden="true">${STARS}<i class="orb"></i><i class="cl c1" style="--i:0"></i><i class="cl c2" style="--i:1"></i><i class="cl c3" style="--i:2"></i><i class="cl c4" style="--i:3"></i><i class="tint"></i><i class="rain"></i><i class="snow"></i><i class="flash"></i></div>`;
   const darkSky = period === 'night' || kind === 'rain' || kind === 'storm';   // light text on these, so the words stay readable
   const members = state.members.slice(0, 4).map(m => avatar(m.id)).join('');
   const n = (state.captures || []).length;
@@ -1342,11 +1416,11 @@ function renderToday() {
         <div class="glassfoot"><button class="avstack famlink" data-act="tab" data-tab="family" aria-label="Family settings">${members || icon('users')}<span>Family</span></button><button class="link" data-act="tab" data-tab="calendar">Calendar</button></div>
       </div>`;
 
-  $('#screen-today').innerHTML = `<div class="home${expandedCardId ? ' expanded' : ''}${darkSky ? ' darksky' : ''}" id="home">
+  $('#screen-today').innerHTML = `<div class="home${expandedCardId ? ' expanded' : ''}${darkSky ? ' darksky' : ''}" id="home"${op ? op.style : ''}>
     ${sky}
     ${bar}
     <div class="todayview" id="todayview">
-      <section class="hero" aria-label="Today">
+      <section class="hero${op ? op.hero : ''}" aria-label="Today">
         ${inbox}
         ${hello}
         ${weatherStrip()}
@@ -1390,6 +1464,32 @@ function skyKind(type) {
   if (t === 'CLOUDY' || t === 'MOSTLY_CLOUDY') return 'cloudy';
   if (t === 'PARTLY_CLOUDY') return 'partly';
   return 'clear';
+}
+// The eight stars of the sky, each its own point (--i is its place in the line-up, --s its size).
+const STARS = [[0, 1.6, 12, 14], [1, 1.2, 28, 32], [2, 1.8, 44, 9], [3, 1.2, 63, 26], [4, 1.5, 82, 40], [5, 1.2, 91, 12], [6, 1.4, 20, 52], [7, 1.2, 55, 46]]
+  .map(([i, s, x, y]) => `<i class="st" style="--i:${i};--s:${s}px;left:${x}%;top:${y}%"></i>`).join('');
+// The opening: how the sky's parts arrive when the app opens. The picks follow the data — the sun rises at dawn and sinks at dusk,
+// the moon rises at night with the stars coming out one by one, clouds drift or roll in, rain falls, snow flurries, a storm flashes once —
+// so the first second tells you what the sky is doing right now. (The choices come from the Sky Openings page; Alex asked for data-led picks.)
+const OPENING = {
+  f: .75, td: 120,                                                          // "Together" timing: everything at once, done in about a second
+  sky: 'fade', text: 'rise',
+  orb: { dawn: 'rise', day: 'bloom', dusk: 'dip', night: 'moonrise' },
+  stars: { rise: 'fade', bloom: 'fade', dip: 'late', moonrise: 'sprinkle' },   // the stars follow the sun or moon: first stars at dusk, one by one at night
+  wx: { clear: 'none', partly: 'driftin', cloudy: 'thicken', wind: 'gust', rain: 'downpour', snow: 'flurry', storm: 'flash' },
+};
+const OPENING_MS = 2200;      // the longest opening (a snow flurry) is over by then
+let openingT0 = 0;            // when the current opening started (0 = none playing)
+function opening(period, kind) {
+  const el = openingT0 ? Date.now() - openingT0 : Infinity;
+  if (el > OPENING_MS || matchMedia('(prefers-reduced-motion: reduce)').matches) return null;
+  const orb = OPENING.orb[period] || 'bloom', wx = OPENING.wx[kind] || 'none';
+  const td = wx === 'flash' ? Math.max(OPENING.td, 900) : OPENING.td;     // in a storm the words wait for the lightning
+  return {
+    sky: ` go o-sky-${OPENING.sky} o-orb-${orb} o-stars-${OPENING.stars[orb]} o-wx-${wx}`,
+    hero: ` go o-text-${OPENING.text}`,
+    style: ` style="--f:${OPENING.f};--td:${Math.round(td * OPENING.f)}ms;--el:-${el}ms"`,   // a redraw mid-opening carries on from where it was
+  };
 }
 // The scene tile: a little square of the same sky, with the sun or moon where it really is, and whatever is falling.
 function sceneSvg(type, isDay = true, period = skyPeriod()) {
@@ -2155,8 +2255,15 @@ function toast(msg, undo) {
   toastTimer = setTimeout(() => el.classList.remove('show'), undo ? 8000 : 4000);   // stays 4 s, or 8 s when there is an Undo
 }
 
-// when the app comes back to the foreground (phone unlocked, tab switched back), refresh what's stale
-document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
+// when the app comes back to the foreground (phone unlocked, tab switched back), refresh what's stale;
+// after ten minutes or more away it feels like opening the app, so the sky plays its opening again
+let hiddenAt = 0;
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { hiddenAt = Date.now(); return; }
+  if (hiddenAt && Date.now() - hiddenAt >= 10 * 60e3) openingT0 = Date.now();
+  hiddenAt = 0;
+  render();
+});
 
 /* =====================================================================
    8. GOOGLE SERVICES — weather and drive times
@@ -3294,6 +3401,7 @@ function interpretAs(p, kind) { return interpret(p.source || p.text || p.title |
 document.querySelectorAll('.tab[data-tab]').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
 wireCaptureButton();
 importSetupFromUrl();
+openingT0 = Date.now();   // the sky plays its opening on the first draw
 render();
 </script>
 
