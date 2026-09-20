@@ -67,6 +67,7 @@
   --font-display: 'Bricolage Grotesque', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
   --font-body: 'Instrument Sans', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
   --font-mono: 'DM Mono', 'SF Mono', Consolas, 'Liberation Mono', monospace;
+  --font-emoji: 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', 'Android Emoji', sans-serif;   /* the phone's own emoji, for member pictures */
   /* motion */
   --ease: cubic-bezier(.2,.8,.2,1);
   --dur: 220ms;
@@ -136,7 +137,9 @@ svg.i { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-widt
 main { flex: 1; }
 .screen { padding: 0 var(--s4) calc(104px + env(safe-area-inset-bottom, 0px)); }
 .screen.enter { animation: rise var(--dur) var(--ease); }
+#screen-today.enter { animation-name: fadein; }   /* Today only fades in: a slide would drag its full-screen sky along for a moment */
 @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
 
 .tabbar {
   position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); z-index: 10;
@@ -171,7 +174,8 @@ main { flex: 1; }
 .list { display: flex; flex-direction: column; gap: var(--s2); }
 .av { --c: var(--accent); width: 28px; height: 28px; border-radius: 50%; display: inline-grid; place-items: center; background: var(--c); color: #fff; font: 700 12px/1 var(--font-body); flex: none; overflow: hidden; }
 .av.av-lg { width: 40px; height: 40px; font-size: 16px; }
-.av .pic { display: block; width: 100%; height: 100%; }   /* a member's picture fills the circle in place of the initial */
+.av .pic.emo { font: 400 1.55em/1 var(--font-emoji); display: block; transform: translateY(.03em); }   /* a member's picture: the phone's own emoji in place of the initial… */
+.av .pic.art { display: block; width: 100%; height: 100%; }                                              /* …or one of the drawn stickers, filling the circle */
 .avs { display: inline-flex; align-items: center; }
 .avs .av { width: 22px; height: 22px; font-size: 10px; margin-left: -6px; box-shadow: 0 0 0 2px var(--surface); }
 .avs .av:first-child { margin-left: 0; }
@@ -382,12 +386,20 @@ main { flex: 1; }
 .member > .av { grid-area: av; }
 .member input { grid-area: name; min-width: 0; }
 .member > .iconbtn { grid-area: x; }
-.swatches { grid-area: sw; display: flex; gap: var(--s2); padding-left: 52px; }
+/* one line of colors, with an arrow at its end that opens the picture choices underneath */
+.swatches { grid-area: sw; display: flex; align-items: center; gap: var(--s2); padding-left: 52px; }
 .swatch { width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent; }
 .swatch.on { border-color: var(--ink); box-shadow: inset 0 0 0 2px var(--surface); }
-/* the picture row: the plain initial, then the eleven stickers, each shown on the member's color */
-.pics { grid-area: pc; display: flex; flex-wrap: wrap; gap: var(--s2); padding-left: 52px; }
-.pics .lbl { flex-basis: 100%; font: 600 var(--t-xs)/1 var(--font-body); letter-spacing: .09em; text-transform: uppercase; color: var(--muted); margin: 2px 0 -2px; }
+.morebtn { margin-left: auto; width: 36px; height: 36px; color: var(--muted); }
+.morebtn svg.i { transition: transform var(--dur) var(--ease); }
+.morebtn[aria-expanded="true"] svg.i { transform: rotate(180deg); }
+.morebtn[aria-expanded="true"] { color: var(--ink); }
+/* the picture row (hidden until the arrow opens it): the plain initial, then the pictures, each on the member's color */
+.pics { grid-area: pc; display: none; flex-wrap: wrap; gap: var(--s2); padding-left: 52px; }
+.member.open .pics { display: flex; animation: rise var(--dur) var(--ease); }
+.pics .lbl { flex-basis: 100%; font: 600 var(--t-xs)/1 var(--font-body); letter-spacing: .09em; text-transform: uppercase; color: var(--muted); margin: 6px 0 -2px; }
+.pics .lbl:first-child { margin-top: 2px; }
+.pics .sub { flex-basis: 100%; font: 500 12px/1 var(--font-body); color: var(--ink-2); margin: 2px 0 -4px; }
 .pics button { padding: 0; border-radius: 50%; display: block; }
 .pics button .av { width: 36px; height: 36px; font-size: 14px; display: grid; }
 .pics button.on { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ink); }
@@ -548,20 +560,27 @@ textarea { min-height: 96px; resize: vertical; line-height: 1.4; }
   --sky-cloud: rgba(255,255,255,.14); --sky-storm-cloud: rgba(20,24,36,.6); --sky-star: rgba(255,255,255,.85);
   --tint-partly: rgba(120,130,150,.12); --tint-cloudy: rgba(110,120,140,.35); --tint-rain: rgba(40,52,74,.5); --tint-storm: rgba(10,12,20,.6); --tint-snow: rgba(200,208,224,.18);
 }
-.home { position: relative; }
+/* The sky fills the whole Today screen — top to bottom, edge to edge — and stays put while everything else scrolls over it.
+   (It is pinned to the window, the width of the phone column; the home screen is its own stacking layer so the sky can sit
+   underneath all of it, and it disappears with the Today screen when another tab is showing.) */
+.home { position: relative; isolation: isolate; }
 .todayview { position: relative; z-index: 1; }
-.sky { position: absolute; z-index: 0; top: 0; left: calc(-1 * var(--s4)); right: calc(-1 * var(--s4)); height: var(--sky-h, 560px); overflow: hidden; pointer-events: none;
-  background: linear-gradient(180deg, var(--sky-1) 0%, var(--sky-2) 55%, var(--sky-3) 100%); transition: height 320ms var(--ease), opacity 260ms var(--ease); }
+.sky { position: fixed; z-index: -1; top: 0; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: var(--app-w); overflow: hidden; pointer-events: none;
+  background: linear-gradient(180deg, var(--sky-1) 0%, var(--sky-2) 48%, var(--sky-3) 100%); }
 .sky.p-dawn  { --sky-1: var(--sky-dawn-1);  --sky-2: var(--sky-dawn-2);  --sky-3: var(--sky-dawn-3); }
 .sky.p-day   { --sky-1: var(--sky-day-1);   --sky-2: var(--sky-day-2);   --sky-3: var(--sky-day-3); }
 .sky.p-dusk  { --sky-1: var(--sky-dusk-1);  --sky-2: var(--sky-dusk-2);  --sky-3: var(--sky-dusk-3); }
 .sky.p-night { --sky-1: var(--sky-night-1); --sky-2: var(--sky-night-2); --sky-3: var(--sky-night-3); }
 .sky > i { position: absolute; display: block; }
-.sky .orb { width: 200px; height: 200px; border-radius: 50%; background: radial-gradient(circle, rgba(255,226,130,.95) 0 15%, rgba(255,205,100,.45) 36%, rgba(255,190,90,0) 68%); filter: blur(3px); animation: breathe 7s ease-in-out infinite; }
-.sky.p-dawn .orb  { left: 4%; top: 46%; }
-.sky.p-day .orb   { right: 6%; top: -6%; }
-.sky.p-dusk .orb  { right: 2%; top: 38%; background: radial-gradient(circle, rgba(255,205,120,.95) 0 15%, rgba(250,150,90,.5) 36%, rgba(240,120,80,0) 68%); }
-.sky.p-night .orb { right: 10%; top: 4%; width: 130px; height: 130px; background: radial-gradient(circle, rgba(246,244,232,.95) 0 14%, rgba(230,232,240,.3) 32%, rgba(230,232,240,0) 62%); filter: blur(1.5px); }
+/* The sun and moon live in the top corners, just under the phone's status bar, so their bright part never sits behind the
+   clock, the greeting, the date or the weather line (the words are centered; the corners are the one place nothing is written).
+   Their glow is kept short for the same reason. Positions hang off the safe-area inset so a notch doesn't push them onto the words. */
+.sky { --sat: env(safe-area-inset-top, 0px); }
+.sky .orb { width: 190px; height: 190px; border-radius: 50%; background: radial-gradient(circle, rgba(255,226,130,.95) 0 14%, rgba(255,205,100,.45) 32%, rgba(255,190,90,0) 58%); filter: blur(3px); animation: breathe 7s ease-in-out infinite; }
+.sky.p-dawn .orb  { left: -52px; top: calc(var(--sat) - 80px); }                 /* rising: the top-left corner */
+.sky.p-day .orb   { right: -52px; top: calc(var(--sat) - 80px); }                /* high: the top-right corner */
+.sky.p-dusk .orb  { right: -52px; top: calc(var(--sat) - 80px); background: radial-gradient(circle, rgba(255,205,120,.95) 0 14%, rgba(250,150,90,.5) 32%, rgba(240,120,80,0) 58%); }
+.sky.p-night .orb { right: -18px; top: calc(var(--sat) - 44px); width: 130px; height: 130px; background: radial-gradient(circle, rgba(246,244,232,.95) 0 14%, rgba(230,232,240,.3) 32%, rgba(230,232,240,0) 60%); filter: blur(1.5px); }
 .sky.k-cloudy .orb, .sky.k-rain .orb, .sky.k-snow .orb { opacity: .4; }
 .sky.k-storm .orb { opacity: .18; }
 .sky .stars { inset: 0; opacity: 0; background-image: radial-gradient(1.6px 1.6px at 12% 14%, var(--sky-star) 60%, transparent), radial-gradient(1.2px 1.2px at 28% 32%, var(--sky-star) 60%, transparent), radial-gradient(1.8px 1.8px at 44% 9%, var(--sky-star) 60%, transparent), radial-gradient(1.2px 1.2px at 63% 26%, var(--sky-star) 60%, transparent), radial-gradient(1.5px 1.5px at 82% 40%, var(--sky-star) 60%, transparent), radial-gradient(1.2px 1.2px at 91% 12%, var(--sky-star) 60%, transparent), radial-gradient(1.4px 1.4px at 20% 52%, var(--sky-star) 60%, transparent), radial-gradient(1.2px 1.2px at 55% 46%, var(--sky-star) 60%, transparent); animation: twinkle 5s ease-in-out infinite; }
@@ -569,11 +588,13 @@ textarea { min-height: 96px; resize: vertical; line-height: 1.4; }
 .sky.p-dusk .stars { opacity: .35; }
 .sky.k-cloudy .stars, .sky.k-rain .stars, .sky.k-storm .stars, .sky.k-snow .stars { opacity: 0; }
 .sky .cl { height: 80px; width: 260px; border-radius: 999px; background: var(--sky-cloud); filter: blur(16px); opacity: 0; animation: drift 36s ease-in-out infinite alternate; }
-.sky .cl.c1 { left: -8%; top: 22%; }
-.sky .cl.c2 { right: -10%; top: 40%; width: 300px; animation-duration: 48s; animation-direction: alternate-reverse; }
-.sky .cl.c3 { left: 24%; top: 58%; width: 220px; height: 60px; animation-duration: 42s; }
+.sky .cl.c1 { left: -8%; top: calc(var(--sat) + 110px); }
+.sky .cl.c2 { right: -10%; top: calc(var(--sat) + 215px); width: 300px; animation-duration: 48s; animation-direction: alternate-reverse; }
+.sky .cl.c3 { left: 24%; top: calc(var(--sat) + 315px); width: 220px; height: 60px; animation-duration: 42s; }
+.sky .cl.c4 { right: 8%; top: 62%; width: 280px; height: 70px; animation-duration: 54s; animation-direction: alternate-reverse; }   /* a low one, behind the cards, so a cloudy sky is cloudy all the way down */
 .sky.k-partly .cl.c1, .sky.k-partly .cl.c2 { opacity: .8; }
 .sky.k-cloudy .cl, .sky.k-rain .cl, .sky.k-snow .cl, .sky.k-storm .cl, .sky.k-wind .cl { opacity: 1; }
+.sky.p-night .cl { background: rgba(255,255,255,.16); }   /* night clouds stay faint, so white words stay readable over them */
 .sky.k-rain .cl, .sky.k-storm .cl { background: var(--sky-storm-cloud); }
 .sky .tint { inset: 0; }
 .sky.k-partly .tint { background: var(--tint-partly); }
@@ -581,21 +602,18 @@ textarea { min-height: 96px; resize: vertical; line-height: 1.4; }
 .sky.k-rain .tint { background: var(--tint-rain); }
 .sky.k-storm .tint { background: var(--tint-storm); }
 .sky.k-snow .tint { background: var(--tint-snow); }
-.sky .fade { left: 0; right: 0; bottom: 0; height: 72px; background: linear-gradient(to bottom, transparent, var(--bg)); }
-.home.expanded .sky { height: calc(var(--topbar-h, 0px) + 132px); }
 @keyframes breathe { 50% { transform: scale(1.07); } }
 @keyframes twinkle { 50% { opacity: .55; } }
 @keyframes drift { to { transform: translateX(28px); } }
 
-/* the upper half sits straight on the sky: no panel, no box, no shadow — just the words and the weather over the gradient.
-   Dark skies (night, rain, storms, and every sky in dark mode) get light text with a whisper of shadow; light skies keep the app's ink. */
-.hero { position: relative; margin-top: calc(var(--s2) + env(safe-area-inset-top, 0px)); padding: var(--s3) var(--s1) 0;
-  --h-ink: var(--ink); --h-ink-2: var(--ink-2); --h-muted: var(--muted); --h-line: rgba(27,29,37,.14); --h-cell: rgba(255,255,255,.5); --h-link: var(--accent); --h-shadow: none;
-  color: var(--h-ink); text-shadow: var(--h-shadow); }
-.sky.p-night ~ .todayview .hero, .sky.k-rain ~ .todayview .hero, .sky.k-storm ~ .todayview .hero {
-  --h-ink: #fff; --h-ink-2: rgba(255,255,255,.84); --h-muted: rgba(255,255,255,.66); --h-line: rgba(255,255,255,.26); --h-cell: rgba(255,255,255,.14); --h-link: #fff; --h-shadow: 0 1px 2px rgba(0,0,0,.28); }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .hero { --h-ink: var(--ink); --h-ink-2: var(--ink-2); --h-muted: var(--muted); --h-line: rgba(255,255,255,.16); --h-cell: rgba(255,255,255,.07); --h-shadow: none; } }
-:root[data-theme="dark"] .hero { --h-ink: var(--ink); --h-ink-2: var(--ink-2); --h-muted: var(--muted); --h-line: rgba(255,255,255,.16); --h-cell: rgba(255,255,255,.07); --h-shadow: none; }
+/* Everything on the home screen sits straight on the sky: no panel, no box, no shadow — just the words, the weather and the cards over the gradient.
+   Dark skies (night, rain, storms — the home screen carries "darksky" then — and every sky in dark mode) get light text with a whisper of shadow;
+   light skies keep the app's ink. The tokens live on the home screen so the greeting, the Coming up heading and the empty states all follow the same sky. */
+.home { --h-ink: var(--ink); --h-ink-2: var(--ink-2); --h-muted: var(--muted); --h-line: rgba(27,29,37,.14); --h-cell: rgba(255,255,255,.5); --h-link: var(--accent); --h-shadow: none; }
+.home.darksky { --h-ink: #fff; --h-ink-2: rgba(255,255,255,.84); --h-muted: rgba(255,255,255,.66); --h-line: rgba(255,255,255,.26); --h-cell: rgba(255,255,255,.14); --h-link: #fff; --h-shadow: 0 1px 2px rgba(0,0,0,.28); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .home { --h-ink: var(--ink); --h-ink-2: var(--ink-2); --h-muted: var(--muted); --h-line: rgba(255,255,255,.16); --h-cell: rgba(255,255,255,.07); --h-shadow: none; } }
+:root[data-theme="dark"] .home { --h-ink: var(--ink); --h-ink-2: var(--ink-2); --h-muted: var(--muted); --h-line: rgba(255,255,255,.16); --h-cell: rgba(255,255,255,.07); --h-shadow: none; }
+.hero { position: relative; margin-top: calc(var(--s2) + env(safe-area-inset-top, 0px)); padding: var(--s3) var(--s1) 0; color: var(--h-ink); text-shadow: var(--h-shadow); }
 .hero .inboxpill { position: absolute; top: 4px; right: 4px; z-index: 2; text-shadow: none; }
 /* the greeting block, kept short: a 36px clock, the greeting, the date */
 .hello { text-align: center; }
@@ -656,11 +674,13 @@ textarea { min-height: 96px; resize: vertical; line-height: 1.4; }
 @keyframes sc-flash { 0%, 100% { opacity: 0; } 48% { opacity: 1; } 56% { opacity: .15; } 60% { opacity: 1; } 78% { opacity: 0; } }
 @keyframes sc-gust { to { stroke-dashoffset: -40; } }
 @media (prefers-reduced-motion: reduce) {
-  .sky > i, .scene [class^="sc-"] { animation: none !important; }
+  .scene [class^="sc-"] { animation: none !important; }   /* the sky's slow breathing is the one thing left moving with Reduce Motion on (Alex's choice) */
   .scene .sc-bolt, .scene .sc-drop, .scene .sc-flake { opacity: 1; }
 }
-.stackhead h2 { font: 600 var(--t-xs)/1 var(--font-body); letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
-.stackhead .hint { font-size: 12px; }
+.stackhead h2 { font: 600 var(--t-xs)/1 var(--font-body); letter-spacing: .09em; text-transform: uppercase; color: var(--h-muted); text-shadow: var(--h-shadow); }
+.stackhead .hint { font-size: 12px; color: var(--h-ink-2); text-shadow: var(--h-shadow); }
+.home .stack-empty .empty h3 { color: var(--h-ink); text-shadow: var(--h-shadow); }
+.home .stack-empty .empty p { color: var(--h-ink-2); text-shadow: var(--h-shadow); }
 /* the cards: soonest on top; each next card laps the bottom of the one before it */
 .cards { display: flex; flex-direction: column; padding-bottom: var(--s4); }
 .card { --c1: var(--sun-a); --c2: var(--sun-b); --ink-c: var(--sun-ink); --cell: rgba(255,255,255,.55); position: relative; border-radius: var(--r-lg); background: linear-gradient(135deg, var(--c1), var(--c2)); color: var(--ink-c); padding: var(--s4) var(--s4) 12px; box-shadow: 0 -6px 18px rgba(27,29,37,.12), 0 8px 24px rgba(27,29,37,.14); transition: transform 220ms var(--ease); cursor: pointer; }
@@ -778,7 +798,7 @@ textarea { min-height: 96px; resize: vertical; line-height: 1.4; }
 .filepick input { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation: none !important; transition: none !important; }
+  *:not(.sky > i), *::before, *::after { animation: none !important; transition: none !important; }   /* everything stops except the sky's slow breathing */
 }
 </style>
 
@@ -834,129 +854,47 @@ textarea { min-height: 96px; resize: vertical; line-height: 1.4; }
   <symbol id="i-up" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></symbol>
   <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
   <symbol id="i-image" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><circle cx="9" cy="10" r="1.6"/><path d="m5 18 5-5 3 3 2.5-2.5L20 18"/></symbol>
-  <!-- member pictures: flat, friendly stickers drawn on the member's color (viewBox 0 0 64 64, the circle clips them) -->
-  <symbol id="av-cat" viewBox="0 0 64 64">
-    <path d="M13 36 15 9l19 15z" fill="#F0A24C"/><path d="M51 36 49 9 30 24z" fill="#F0A24C"/>
-    <path d="M17.5 30 18.5 15l11 9z" fill="#F7B9C4"/><path d="M46.5 30 45.5 15l-11 9z" fill="#F7B9C4"/>
-    <circle cx="32" cy="38" r="22" fill="#F5AC55"/>
-    <path d="M24 19q4 3 8 0M31 17.5v6M36 19q2 3 5 1" stroke="#D68533" stroke-width="3" stroke-linecap="round" fill="none"/>
-    <ellipse cx="32" cy="47" rx="10" ry="6.5" fill="#FFF3E2"/>
-    <ellipse cx="24" cy="37" rx="3.2" ry="3.8" fill="#26233A"/><ellipse cx="40" cy="37" rx="3.2" ry="3.8" fill="#26233A"/>
-    <circle cx="25" cy="35.6" r="1" fill="#fff"/><circle cx="41" cy="35.6" r="1" fill="#fff"/>
-    <path d="M29.5 44h5l-2.5 2.6z" fill="#E88A9A"/>
-    <path d="M32 46.6v1.6M28.5 49.5q3.5 2.5 7 0" stroke="#26233A" stroke-width="1.6" stroke-linecap="round" fill="none"/>
-    <path d="M6 43l14 2M6 50l14-2M58 43l-14 2M58 50l-14-2" stroke="#26233A" stroke-width="1.5" stroke-linecap="round" opacity=".55"/>
-  </symbol>
-  <symbol id="av-dog" viewBox="0 0 64 64">
-    <rect x="3" y="21" width="15" height="31" rx="7.5" fill="#8A5634"/><rect x="46" y="21" width="15" height="31" rx="7.5" fill="#8A5634"/>
-    <circle cx="32" cy="36" r="22" fill="#C98B5A"/>
-    <ellipse cx="32" cy="45" rx="12" ry="9" fill="#FFF3E2"/>
-    <ellipse cx="32" cy="41.5" rx="4.6" ry="3.6" fill="#26233A"/><circle cx="30.5" cy="40.5" r="1.1" fill="#fff"/>
-    <path d="M32 45v3.5M26.5 49q5.5 4.5 11 0" stroke="#26233A" stroke-width="1.7" stroke-linecap="round" fill="none"/>
-    <path d="M28.5 50.5q3.5 4 7 0z" fill="#F28B9D"/>
-    <circle cx="23" cy="31" r="3.2" fill="#26233A"/><circle cx="41" cy="31" r="3.2" fill="#26233A"/>
-    <circle cx="24.2" cy="29.8" r="1.1" fill="#fff"/><circle cx="42.2" cy="29.8" r="1.1" fill="#fff"/>
-    <path d="M18 24q4-2 8-1M38 23q4-1 8 1" stroke="#8A5634" stroke-width="2.2" stroke-linecap="round" fill="none"/>
-  </symbol>
-  <symbol id="av-fish" viewBox="0 0 64 64">
-    <circle cx="53" cy="16" r="3" fill="#FFF3E2" opacity=".85"/><circle cx="58" cy="9" r="1.8" fill="#FFF3E2" opacity=".7"/>
-    <path d="M18 33 4 19q7 14 0 28z" fill="#FF8C3A"/>
-    <path d="M23 24q9-13 18-1z" fill="#FF8C3A"/>
-    <ellipse cx="33" cy="35" rx="19" ry="13.5" fill="#FFA24A"/>
-    <ellipse cx="35" cy="40.5" rx="12" ry="5.5" fill="#FFD48F"/>
-    <ellipse cx="29" cy="40" rx="6" ry="3.2" transform="rotate(-25 29 40)" fill="#FF8C3A"/>
-    <circle cx="43" cy="31.5" r="4.2" fill="#FFF3E2"/><circle cx="44" cy="31.5" r="2.4" fill="#26233A"/><circle cx="45" cy="30.5" r=".8" fill="#fff"/>
-    <path d="M51 36.5q-2 1.5-4 0" stroke="#26233A" stroke-width="1.5" stroke-linecap="round" fill="none"/>
-    <path d="M30 27q3 7 0 14M37 26q3 8 0 16" stroke="#FF8C3A" stroke-width="1.6" stroke-linecap="round" fill="none" opacity=".8"/>
-  </symbol>
-  <symbol id="av-turtle" viewBox="0 0 64 64">
-    <circle cx="32" cy="17" r="8.5" fill="#8BD48A"/>
-    <circle cx="29" cy="15.5" r="1.7" fill="#26233A"/><circle cx="35" cy="15.5" r="1.7" fill="#26233A"/>
-    <path d="M29.5 20q2.5 2 5 0" stroke="#26233A" stroke-width="1.4" stroke-linecap="round" fill="none"/>
-    <circle cx="12" cy="49" r="6" fill="#8BD48A"/><circle cx="52" cy="49" r="6" fill="#8BD48A"/>
-    <path d="M9 43a23 22 0 0 1 46 0z" fill="#56B266"/>
-    <path d="M9 43h46v3a6 6 0 0 1-6 6H15a6 6 0 0 1-6-6z" fill="#3B8F4C"/>
-    <path d="M32 24l6 3.5v7L32 38l-6-3.5v-7z" fill="#82CE8C"/>
-    <path d="M20 31l5 3v6l-5 3-5-3v-6zM44 31l5 3v6l-5 3-5-3v-6z" fill="#82CE8C"/>
-  </symbol>
-  <symbol id="av-hamster" viewBox="0 0 64 64">
-    <circle cx="16" cy="18" r="8" fill="#D9A878"/><circle cx="48" cy="18" r="8" fill="#D9A878"/>
-    <circle cx="16" cy="18" r="4.2" fill="#F5B5BF"/><circle cx="48" cy="18" r="4.2" fill="#F5B5BF"/>
-    <circle cx="32" cy="36" r="22" fill="#EBC59E"/>
-    <circle cx="19" cy="44" r="9" fill="#FFF3E2"/><circle cx="45" cy="44" r="9" fill="#FFF3E2"/>
-    <ellipse cx="32" cy="45" rx="7" ry="5" fill="#FFF3E2"/>
-    <circle cx="25" cy="33" r="3" fill="#26233A"/><circle cx="39" cy="33" r="3" fill="#26233A"/>
-    <circle cx="26.1" cy="31.9" r="1" fill="#fff"/><circle cx="40.1" cy="31.9" r="1" fill="#fff"/>
-    <ellipse cx="32" cy="41" rx="2.6" ry="2" fill="#E88A9A"/>
-    <path d="M32 43v2M29 46.5q3 2.2 6 0" stroke="#26233A" stroke-width="1.5" stroke-linecap="round" fill="none"/>
-    <path d="M7 42l9 1.5M7 48l9-1M57 42l-9 1.5M57 48l-9-1" stroke="#26233A" stroke-width="1.4" stroke-linecap="round" opacity=".5"/>
-  </symbol>
-  <symbol id="av-trex" viewBox="0 0 64 64">
-    <path d="M12 42V26q0-14 16-14h14q14 0 16 14v8H30q-8 0-10 8z" fill="#5FB35A"/>
-    <path d="M58 40v6q0 8-10 8H32q-6 0-6-6v-4q0-4 4-4z" fill="#4A9C48"/>
-    <path d="M30 34h28v6H30z" fill="#B23A57"/>
-    <path d="M34 34l3 6 3-6zM42 34l3 6 3-6zM50 34l3 6 3-6z" fill="#FFF7EA"/>
-    <path d="M36 44l3-5 3 5zM46 44l3-5 3 5z" fill="#FFF7EA"/>
-    <path d="M16 44q-3 8 5 9" stroke="#4A9C48" stroke-width="5" stroke-linecap="round" fill="none"/>
-    <circle cx="27" cy="24" r="4.6" fill="#FFF7EA"/><circle cx="28" cy="24" r="2.6" fill="#26233A"/><circle cx="29" cy="23" r=".9" fill="#fff"/>
-    <path d="M21 18q4-3 9-1" stroke="#3E8A3C" stroke-width="2.4" stroke-linecap="round" fill="none"/>
-    <circle cx="52" cy="21" r="1.8" fill="#3E8A3C"/>
-  </symbol>
-  <symbol id="av-bronto" viewBox="0 0 64 64">
-    <path d="M8 46q-6-4-6-14" stroke="#62AFC9" stroke-width="7" stroke-linecap="round" fill="none"/>
-    <rect x="12" y="50" width="9" height="14" rx="4" fill="#4E95AC"/><rect x="30" y="50" width="9" height="14" rx="4" fill="#4E95AC"/>
-    <ellipse cx="25" cy="45" rx="19" ry="12" fill="#62AFC9"/>
-    <ellipse cx="25" cy="50" rx="13" ry="5" fill="#9BDCEA" opacity=".8"/>
-    <path d="M36 42q10-6 13-26" stroke="#62AFC9" stroke-width="10" stroke-linecap="round" fill="none"/>
-    <ellipse cx="50" cy="13" rx="8" ry="6" fill="#62AFC9"/>
-    <circle cx="52.5" cy="11.5" r="1.8" fill="#26233A"/><circle cx="53.2" cy="10.8" r=".6" fill="#fff"/>
-    <path d="M53 16q2 1 4-.5" stroke="#26233A" stroke-width="1.3" stroke-linecap="round" fill="none"/>
-    <circle cx="19" cy="41" r="3" fill="#8FD3E6"/><circle cx="29" cy="39" r="2.2" fill="#8FD3E6"/><circle cx="14" cy="47" r="2" fill="#8FD3E6"/>
-  </symbol>
-  <symbol id="av-man" viewBox="0 0 64 64">
-    <path d="M6 70q0-22 26-22t26 22z" fill="#EFE8DC"/>
-    <rect x="26" y="38" width="12" height="12" fill="#E4AE85"/>
-    <circle cx="19" cy="31" r="3.4" fill="#F2C6A0"/><circle cx="45" cy="31" r="3.4" fill="#F2C6A0"/>
-    <ellipse cx="32" cy="29" rx="13.5" ry="15.5" fill="#F2C6A0"/>
-    <path d="M18.5 30q-1-19 13.5-19t13.5 19q-2-8-13.5-8t-13.5 8z" fill="#3B2A1F"/>
-    <path d="M18.5 26v7M45.5 26v7" stroke="#3B2A1F" stroke-width="3" stroke-linecap="round"/>
-    <circle cx="27" cy="31" r="2" fill="#26233A"/><circle cx="37" cy="31" r="2" fill="#26233A"/>
-    <path d="M24 27q3-1.5 6 0M34 27q3-1.5 6 0" stroke="#3B2A1F" stroke-width="1.6" stroke-linecap="round" fill="none"/>
-    <path d="M27.5 38q4.5 3.5 9 0" stroke="#26233A" stroke-width="1.6" stroke-linecap="round" fill="none"/>
-  </symbol>
-  <symbol id="av-woman" viewBox="0 0 64 64">
-    <path d="M6 70q0-22 26-22t26 22z" fill="#EFE8DC"/>
-    <path d="M16 52V28q0-18 16-18t16 18v24q-6 4-16 4t-16-4z" fill="#5B3A22"/>
-    <rect x="26" y="38" width="12" height="12" fill="#E4AE85"/>
-    <ellipse cx="32" cy="30" rx="13" ry="15" fill="#F2C6A0"/>
-    <path d="M19 32q-1-20 13-20t13 20q-3-10-13-9.5T19 32z" fill="#5B3A22"/>
-    <circle cx="27" cy="32" r="2" fill="#26233A"/><circle cx="37" cy="32" r="2" fill="#26233A"/>
-    <path d="M24 28q3-1.5 6 0M34 28q3-1.5 6 0" stroke="#5B3A22" stroke-width="1.6" stroke-linecap="round" fill="none"/>
-    <circle cx="23.5" cy="37" r="2.4" fill="#F28B9D" opacity=".55"/><circle cx="40.5" cy="37" r="2.4" fill="#F28B9D" opacity=".55"/>
-    <path d="M27.5 39q4.5 3.5 9 0" stroke="#26233A" stroke-width="1.6" stroke-linecap="round" fill="none"/>
-  </symbol>
-  <symbol id="av-baby" viewBox="0 0 64 64">
-    <circle cx="32" cy="38" r="25" fill="#FFF3E2"/>
-    <path d="M14 47q18 8 36 0" stroke="#E9DCC7" stroke-width="2.2" stroke-linecap="round" fill="none"/>
-    <path d="M12 39q6-6 10 0M42 39q4-6 10 0" stroke="#E9DCC7" stroke-width="2.2" stroke-linecap="round" fill="none"/>
-    <circle cx="32" cy="34" r="14" fill="#F2C6A0"/>
-    <path d="M30 21q1-5 5-4" stroke="#3B2A1F" stroke-width="2.4" stroke-linecap="round" fill="none"/>
-    <path d="M25 34q2.5 2.5 5 0M34 34q2.5 2.5 5 0" stroke="#26233A" stroke-width="1.8" stroke-linecap="round" fill="none"/>
-    <circle cx="23" cy="39" r="2.6" fill="#F28B9D" opacity=".6"/><circle cx="41" cy="39" r="2.6" fill="#F28B9D" opacity=".6"/>
-    <circle cx="32" cy="40.5" r="1.8" fill="#D9737F"/>
-  </symbol>
-  <symbol id="av-toddler" viewBox="0 0 64 64">
-    <path d="M6 70q0-22 26-22t26 22z" fill="#F4B942"/>
-    <path d="M9 57q23-8 46 0" stroke="#FFF3E2" stroke-width="3.5" fill="none"/>
-    <rect x="26" y="38" width="12" height="12" fill="#E4AE85"/>
-    <circle cx="18.5" cy="32" r="3.2" fill="#F2C6A0"/><circle cx="45.5" cy="32" r="3.2" fill="#F2C6A0"/>
-    <circle cx="32" cy="30" r="15" fill="#F2C6A0"/>
-    <path d="M29 17q0-6 5-6M35 16q-1-5 3-6" stroke="#3B2A1F" stroke-width="3" stroke-linecap="round" fill="none"/>
-    <circle cx="26.5" cy="31" r="2.6" fill="#26233A"/><circle cx="37.5" cy="31" r="2.6" fill="#26233A"/>
-    <circle cx="27.5" cy="30" r=".9" fill="#fff"/><circle cx="38.5" cy="30" r=".9" fill="#fff"/>
-    <circle cx="22" cy="36.5" r="2.8" fill="#F28B9D" opacity=".6"/><circle cx="42" cy="36.5" r="2.8" fill="#F28B9D" opacity=".6"/>
-    <path d="M27 38q5 4.5 10 0z" fill="#26233A"/><path d="M30 38.4h4v1.8h-4z" fill="#fff"/>
-  </symbol>
+  <!-- member pictures: flat, friendly stickers drawn on the member's color (viewBox 0 0 64 64, the circle clips them); generated by avatars2.py -->
+  <symbol id="av-d-man-blond" viewBox="0 0 64 64"><path d="M6 70q0-22 26-22t26 22z" fill="#EFE8DC"/><rect x="26" y="38" width="12" height="12" fill="#E4AE85"/><circle cx="19" cy="31" r="3.4" fill="#F2C6A0"/><circle cx="45" cy="31" r="3.4" fill="#F2C6A0"/><ellipse cx="32" cy="29" rx="13.5" ry="15.5" fill="#F2C6A0"/><circle cx="27" cy="31" r="2" fill="#26233A"/><circle cx="37" cy="31" r="2" fill="#26233A"/><path d="M24 27q3-1.5 6 0M34 27q3-1.5 6 0" stroke="#E9C25A" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M27.5 38q4.5 3.5 9 0" stroke="#26233A" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M18.5 30q-1-19 13.5-19t13.5 19q-2-8-13.5-8t-13.5 8z" fill="#E9C25A"/><path d="M18.5 26v7M45.5 26v7" stroke="#E9C25A" stroke-width="3" stroke-linecap="round"/></symbol>
+  <symbol id="av-d-man-red" viewBox="0 0 64 64"><path d="M6 70q0-22 26-22t26 22z" fill="#EFE8DC"/><rect x="26" y="38" width="12" height="12" fill="#E4AE85"/><circle cx="19" cy="31" r="3.4" fill="#F2C6A0"/><circle cx="45" cy="31" r="3.4" fill="#F2C6A0"/><ellipse cx="32" cy="29" rx="13.5" ry="15.5" fill="#F2C6A0"/><circle cx="27" cy="31" r="2" fill="#26233A"/><circle cx="37" cy="31" r="2" fill="#26233A"/><path d="M24 27q3-1.5 6 0M34 27q3-1.5 6 0" stroke="#D4612B" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M27.5 38q4.5 3.5 9 0" stroke="#26233A" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M18.5 30q-1-19 13.5-19t13.5 19q-2-8-13.5-8t-13.5 8z" fill="#D4612B"/><path d="M18.5 26v7M45.5 26v7" stroke="#D4612B" stroke-width="3" stroke-linecap="round"/></symbol>
+  <symbol id="av-d-man-brown" viewBox="0 0 64 64"><path d="M6 70q0-22 26-22t26 22z" fill="#EFE8DC"/><rect x="26" y="38" width="12" height="12" fill="#E4AE85"/><circle cx="19" cy="31" r="3.4" fill="#F2C6A0"/><circle cx="45" cy="31" r="3.4" fill="#F2C6A0"/><ellipse cx="32" cy="29" rx="13.5" ry="15.5" fill="#F2C6A0"/><circle cx="27" cy="31" r="2" fill="#26233A"/><circle cx="37" cy="31" r="2" fill="#26233A"/><path d="M24 27q3-1.5 6 0M34 27q3-1.5 6 0" stroke="#5B3A22" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M27.5 38q4.5 3.5 9 0" stroke="#26233A" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M18.5 30q-1-19 13.5-19t13.5 19q-2-8-13.5-8t-13.5 8z" fill="#5B3A22"/><path d="M18.5 26v7M45.5 26v7" stroke="#5B3A22" stroke-width="3" stroke-linecap="round"/></symbol>
+  <symbol id="av-d-woman-blond" viewBox="0 0 64 64"><path d="M16 52V28q0-18 16-18t16 18v24q-6 4-16 4t-16-4z" fill="#E9C25A"/><path d="M6 70q0-22 26-22t26 22z" fill="#EFE8DC"/><rect x="26" y="38" width="12" height="12" fill="#E4AE85"/><circle cx="19" cy="31" r="3.4" fill="#F2C6A0"/><circle cx="45" cy="31" r="3.4" fill="#F2C6A0"/><ellipse cx="32" cy="30" rx="13.5" ry="15.5" fill="#F2C6A0"/><circle cx="27" cy="31" r="2" fill="#26233A"/><circle cx="37" cy="31" r="2" fill="#26233A"/><path d="M24 27q3-1.5 6 0M34 27q3-1.5 6 0" stroke="#E9C25A" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M27.5 38q4.5 3.5 9 0" stroke="#26233A" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M19 32q-1-20 13-20t13 20q-3-10-13-9.5T19 32z" fill="#E9C25A"/><circle cx="23.5" cy="37" r="2.4" fill="#F28B9D" opacity="0.55"/><circle cx="40.5" cy="37" r="2.4" fill="#F28B9D" opacity="0.55"/></symbol>
+  <symbol id="av-d-woman-red" viewBox="0 0 64 64"><path d="M16 52V28q0-18 16-18t16 18v24q-6 4-16 4t-16-4z" fill="#D4612B"/><path d="M6 70q0-22 26-22t26 22z" fill="#EFE8DC"/><rect x="26" y="38" width="12" height="12" fill="#E4AE85"/><circle cx="19" cy="31" r="3.4" fill="#F2C6A0"/><circle cx="45" cy="31" r="3.4" fill="#F2C6A0"/><ellipse cx="32" cy="30" rx="13.5" ry="15.5" fill="#F2C6A0"/><circle cx="27" cy="31" r="2" fill="#26233A"/><circle cx="37" cy="31" r="2" fill="#26233A"/><path d="M24 27q3-1.5 6 0M34 27q3-1.5 6 0" stroke="#D4612B" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M27.5 38q4.5 3.5 9 0" stroke="#26233A" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M19 32q-1-20 13-20t13 20q-3-10-13-9.5T19 32z" fill="#D4612B"/><circle cx="23.5" cy="37" r="2.4" fill="#F28B9D" opacity="0.55"/><circle cx="40.5" cy="37" r="2.4" fill="#F28B9D" opacity="0.55"/></symbol>
+  <symbol id="av-d-woman-brown" viewBox="0 0 64 64"><path d="M16 52V28q0-18 16-18t16 18v24q-6 4-16 4t-16-4z" fill="#5B3A22"/><path d="M6 70q0-22 26-22t26 22z" fill="#EFE8DC"/><rect x="26" y="38" width="12" height="12" fill="#E4AE85"/><circle cx="19" cy="31" r="3.4" fill="#F2C6A0"/><circle cx="45" cy="31" r="3.4" fill="#F2C6A0"/><ellipse cx="32" cy="30" rx="13.5" ry="15.5" fill="#F2C6A0"/><circle cx="27" cy="31" r="2" fill="#26233A"/><circle cx="37" cy="31" r="2" fill="#26233A"/><path d="M24 27q3-1.5 6 0M34 27q3-1.5 6 0" stroke="#5B3A22" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M27.5 38q4.5 3.5 9 0" stroke="#26233A" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M19 32q-1-20 13-20t13 20q-3-10-13-9.5T19 32z" fill="#5B3A22"/><circle cx="23.5" cy="37" r="2.4" fill="#F28B9D" opacity="0.55"/><circle cx="40.5" cy="37" r="2.4" fill="#F28B9D" opacity="0.55"/></symbol>
+  <symbol id="av-d-hw-m-coat-blond" viewBox="0 0 64 64"><path d="M6 70q0-22 26-22t26 22z" fill="#FFFFFF"/><path d="M23 48l9 14 9-14q-4-1.5-9-1.5T23 48z" fill="#8FB7E6"/><path d="M23 48l9 14M41 48l-9 14" stroke="#D9E0E8" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M23.5 47q-1.5 8 4 12M40.5 47q1.5 8-3 11" stroke="#2E3A48" stroke-width="2" stroke-linecap="round" fill="none"/><circle cx="27.5" cy="59.5" r="3.4" fill="#D7DEE6" stroke="#2E3A48" stroke-width="1.4"/><rect x="26" y="38" width="12" height="12" fill="#E4AE85"/><circle cx="19" cy="31" r="3.4" fill="#F2C6A0"/><circle cx="45" cy="31" r="3.4" fill="#F2C6A0"/><ellipse cx="32" cy="29" rx="13.5" ry="15.5" fill="#F2C6A0"/><circle cx="27" cy="31" r="2" fill="#26233A"/><circle cx="37" cy="31" r="2" fill="#26233A"/><path d="M24 27q3-1.5 6 0M34 27q3-1.5 6 0" stroke="#E9C25A" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M27.5 38q4.5 3.5 9 0" stroke="#26233A" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M18.5 30q-1-19 13.5-19t13.5 19q-2-8-13.5-8t-13.5 8z" fill="#E9C25A"/><path d="M18.5 26v7M45.5 26v7" stroke="#E9C25A" stroke-width="3" stroke-linecap="round"/></symbol>
+  <symbol id="av-d-hw-m-coat-red" viewBox="0 0 64 64"><path d="M6 70q0-22 26-22t26 22z" fill="#FFFFFF"/><path d="M23 48l9 14 9-14q-4-1.5-9-1.5T23 48z" fill="#8FB7E6"/><path d="M23 48l9 14M41 48l-9 14" stroke="#D9E0E8" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M23.5 47q-1.5 8 4 12M40.5 47q1.5 8-3 11" stroke="#2E3A48" stroke-width="2" stroke-linecap="round" fill="none"/><circle cx="27.5" cy="59.5" r="3.4" fill="#D7DEE6" stroke="#2E3A48" stroke-width="1.4"/><rect x="26" y="38" width="12" height="12" fill="#E4AE85"/><circle cx="19" cy="31" r="3.4" fill="#F2C6A0"/><circle cx="45" cy="31" r="3.4" fill="#F2C6A0"/><ellipse cx="32" cy="29" rx="13.5" ry="15.5" fill="#F2C6A0"/><circle cx="27" cy="31" r="2" fill="#26233A"/><circle cx="37" cy="31" r="2" fill="#26233A"/><path d="M24 27q3-1.5 6 0M34 27q3-1.5 6 0" stroke="#D4612B" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M27.5 38q4.5 3.5 9 0" stroke="#26233A" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M18.5 30q-1-19 13.5-19t13.5 19q-2-8-13.5-8t-13.5 8z" fill="#D4612B"/><path d="M18.5 26v7M45.5 26v7" stroke="#D4612B" stroke-width="3" stroke-linecap="round"/></symbol>
+  <symbol id="av-d-hw-m-coat-brown" viewBox="0 0 64 64"><path d="M6 70q0-22 26-22t26 22z" fill="#FFFFFF"/><path d="M23 48l9 14 9-14q-4-1.5-9-1.5T23 48z" fill="#8FB7E6"/><path d="M23 48l9 14M41 48l-9 14" stroke="#D9E0E8" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M23.5 47q-1.5 8 4 12M40.5 47q1.5 8-3 11" stroke="#2E3A48" stroke-width="2" stroke-linecap="round" fill="none"/><circle cx="27.5" cy="59.5" r="3.4" fill="#D7DEE6" stroke="#2E3A48" stroke-width="1.4"/><rect x="26" y="38" width="12" height="12" fill="#E4AE85"/><circle cx="19" cy="31" r="3.4" fill="#F2C6A0"/><circle cx="45" cy="31" r="3.4" fill="#F2C6A0"/><ellipse cx="32" cy="29" rx="13.5" ry="15.5" fill="#F2C6A0"/><circle cx="27" cy="31" r="2" fill="#26233A"/><circle cx="37" cy="31" r="2" fill="#26233A"/><path d="M24 27q3-1.5 6 0M34 27q3-1.5 6 0" stroke="#5B3A22" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M27.5 38q4.5 3.5 9 0" stroke="#26233A" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M18.5 30q-1-19 13.5-19t13.5 19q-2-8-13.5-8t-13.5 8z" fill="#5B3A22"/><path d="M18.5 26v7M45.5 26v7" stroke="#5B3A22" stroke-width="3" stroke-linecap="round"/></symbol>
+  <symbol id="av-d-hw-m-scrubs-blond" viewBox="0 0 64 64"><path d="M6 70q0-22 26-22t26 22z" fill="#3E86D6"/><path d="M25 48l7 8 7-8" stroke="#2A63A8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M25 48l7 8 7-8q-3-1.5-7-1.5T25 48z" fill="#E4AE85" opacity=".9"/><path d="M23.5 47q-1.5 8 4 12M40.5 47q1.5 8-3 11" stroke="#2E3A48" stroke-width="2" stroke-linecap="round" fill="none"/><circle cx="27.5" cy="59.5" r="3.4" fill="#D7DEE6" stroke="#2E3A48" stroke-width="1.4"/><rect x="26" y="38" width="12" height="12" fill="#E4AE85"/><circle cx="19" cy="31" r="3.4" fill="#F2C6A0"/><circle cx="45" cy="31" r="3.4" fill="#F2C6A0"/><ellipse cx="32" cy="29" rx="13.5" ry="15.5" fill="#F2C6A0"/><circle cx="27" cy="31" r="2" fill="#26233A"/><circle cx="37" cy="31" r="2" fill="#26233A"/><path d="M24 27q3-1.5 6 0M34 27q3-1.5 6 0" stroke="#E9C25A" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M27.5 38q4.5 3.5 9 0" stroke="#26233A" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M18.5 30q-1-19 13.5-19t13.5 19q-2-8-13.5-8t-13.5 8z" fill="#E9C25A"/><path d="M18.5 26v7M45.5 26v7" stroke="#E9C25A" stroke-width="3" stroke-linecap="round"/></symbol>
+  <symbol id="av-d-hw-m-scrubs-red" viewBox="0 0 64 64"><path d="M6 70q0-22 26-22t26 22z" fill="#3E86D6"/><path d="M25 48l7 8 7-8" stroke="#2A63A8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M25 48l7 8 7-8q-3-1.5-7-1.5T25 48z" fill="#E4AE85" opacity=".9"/><path d="M23.5 47q-1.5 8 4 12M40.5 47q1.5 8-3 11" stroke="#2E3A48" stroke-width="2" stroke-linecap="round" fill="none"/><circle cx="27.5" cy="59.5" r="3.4" fill="#D7DEE6" stroke="#2E3A48" stroke-width="1.4"/><rect x="26" y="38" width="12" height="12" fill="#E4AE85"/><circle cx="19" cy="31" r="3.4" fill="#F2C6A0"/><circle cx="45" cy="31" r="3.4" fill="#F2C6A0"/><ellipse cx="32" cy="29" rx="13.5" ry="15.5" fill="#F2C6A0"/><circle cx="27" cy="31" r="2" fill="#26233A"/><circle cx="37" cy="31" r="2" fill="#26233A"/><path d="M24 27q3-1.5 6 0M34 27q3-1.5 6 0" stroke="#D4612B" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M27.5 38q4.5 3.5 9 0" stroke="#26233A" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M18.5 30q-1-19 13.5-19t13.5 19q-2-8-13.5-8t-13.5 8z" fill="#D4612B"/><path d="M18.5 26v7M45.5 26v7" stroke="#D4612B" stroke-width="3" stroke-linecap="round"/></symbol>
+  <symbol id="av-d-hw-m-scrubs-brown" viewBox="0 0 64 64"><path d="M6 70q0-22 26-22t26 22z" fill="#3E86D6"/><path d="M25 48l7 8 7-8" stroke="#2A63A8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M25 48l7 8 7-8q-3-1.5-7-1.5T25 48z" fill="#E4AE85" opacity=".9"/><path d="M23.5 47q-1.5 8 4 12M40.5 47q1.5 8-3 11" stroke="#2E3A48" stroke-width="2" stroke-linecap="round" fill="none"/><circle cx="27.5" cy="59.5" r="3.4" fill="#D7DEE6" stroke="#2E3A48" stroke-width="1.4"/><rect x="26" y="38" width="12" height="12" fill="#E4AE85"/><circle cx="19" cy="31" r="3.4" fill="#F2C6A0"/><circle cx="45" cy="31" r="3.4" fill="#F2C6A0"/><ellipse cx="32" cy="29" rx="13.5" ry="15.5" fill="#F2C6A0"/><circle cx="27" cy="31" r="2" fill="#26233A"/><circle cx="37" cy="31" r="2" fill="#26233A"/><path d="M24 27q3-1.5 6 0M34 27q3-1.5 6 0" stroke="#5B3A22" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M27.5 38q4.5 3.5 9 0" stroke="#26233A" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M18.5 30q-1-19 13.5-19t13.5 19q-2-8-13.5-8t-13.5 8z" fill="#5B3A22"/><path d="M18.5 26v7M45.5 26v7" stroke="#5B3A22" stroke-width="3" stroke-linecap="round"/></symbol>
+  <symbol id="av-d-hw-f-coat-blond" viewBox="0 0 64 64"><path d="M16 52V28q0-18 16-18t16 18v24q-6 4-16 4t-16-4z" fill="#E9C25A"/><path d="M6 70q0-22 26-22t26 22z" fill="#FFFFFF"/><path d="M23 48l9 14 9-14q-4-1.5-9-1.5T23 48z" fill="#8FB7E6"/><path d="M23 48l9 14M41 48l-9 14" stroke="#D9E0E8" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M23.5 47q-1.5 8 4 12M40.5 47q1.5 8-3 11" stroke="#2E3A48" stroke-width="2" stroke-linecap="round" fill="none"/><circle cx="27.5" cy="59.5" r="3.4" fill="#D7DEE6" stroke="#2E3A48" stroke-width="1.4"/><rect x="26" y="38" width="12" height="12" fill="#E4AE85"/><circle cx="19" cy="31" r="3.4" fill="#F2C6A0"/><circle cx="45" cy="31" r="3.4" fill="#F2C6A0"/><ellipse cx="32" cy="30" rx="13.5" ry="15.5" fill="#F2C6A0"/><circle cx="27" cy="31" r="2" fill="#26233A"/><circle cx="37" cy="31" r="2" fill="#26233A"/><path d="M24 27q3-1.5 6 0M34 27q3-1.5 6 0" stroke="#E9C25A" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M27.5 38q4.5 3.5 9 0" stroke="#26233A" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M19 32q-1-20 13-20t13 20q-3-10-13-9.5T19 32z" fill="#E9C25A"/><circle cx="23.5" cy="37" r="2.4" fill="#F28B9D" opacity="0.55"/><circle cx="40.5" cy="37" r="2.4" fill="#F28B9D" opacity="0.55"/></symbol>
+  <symbol id="av-d-hw-f-coat-red" viewBox="0 0 64 64"><path d="M16 52V28q0-18 16-18t16 18v24q-6 4-16 4t-16-4z" fill="#D4612B"/><path d="M6 70q0-22 26-22t26 22z" fill="#FFFFFF"/><path d="M23 48l9 14 9-14q-4-1.5-9-1.5T23 48z" fill="#8FB7E6"/><path d="M23 48l9 14M41 48l-9 14" stroke="#D9E0E8" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M23.5 47q-1.5 8 4 12M40.5 47q1.5 8-3 11" stroke="#2E3A48" stroke-width="2" stroke-linecap="round" fill="none"/><circle cx="27.5" cy="59.5" r="3.4" fill="#D7DEE6" stroke="#2E3A48" stroke-width="1.4"/><rect x="26" y="38" width="12" height="12" fill="#E4AE85"/><circle cx="19" cy="31" r="3.4" fill="#F2C6A0"/><circle cx="45" cy="31" r="3.4" fill="#F2C6A0"/><ellipse cx="32" cy="30" rx="13.5" ry="15.5" fill="#F2C6A0"/><circle cx="27" cy="31" r="2" fill="#26233A"/><circle cx="37" cy="31" r="2" fill="#26233A"/><path d="M24 27q3-1.5 6 0M34 27q3-1.5 6 0" stroke="#D4612B" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M27.5 38q4.5 3.5 9 0" stroke="#26233A" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M19 32q-1-20 13-20t13 20q-3-10-13-9.5T19 32z" fill="#D4612B"/><circle cx="23.5" cy="37" r="2.4" fill="#F28B9D" opacity="0.55"/><circle cx="40.5" cy="37" r="2.4" fill="#F28B9D" opacity="0.55"/></symbol>
+  <symbol id="av-d-hw-f-coat-brown" viewBox="0 0 64 64"><path d="M16 52V28q0-18 16-18t16 18v24q-6 4-16 4t-16-4z" fill="#5B3A22"/><path d="M6 70q0-22 26-22t26 22z" fill="#FFFFFF"/><path d="M23 48l9 14 9-14q-4-1.5-9-1.5T23 48z" fill="#8FB7E6"/><path d="M23 48l9 14M41 48l-9 14" stroke="#D9E0E8" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M23.5 47q-1.5 8 4 12M40.5 47q1.5 8-3 11" stroke="#2E3A48" stroke-width="2" stroke-linecap="round" fill="none"/><circle cx="27.5" cy="59.5" r="3.4" fill="#D7DEE6" stroke="#2E3A48" stroke-width="1.4"/><rect x="26" y="38" width="12" height="12" fill="#E4AE85"/><circle cx="19" cy="31" r="3.4" fill="#F2C6A0"/><circle cx="45" cy="31" r="3.4" fill="#F2C6A0"/><ellipse cx="32" cy="30" rx="13.5" ry="15.5" fill="#F2C6A0"/><circle cx="27" cy="31" r="2" fill="#26233A"/><circle cx="37" cy="31" r="2" fill="#26233A"/><path d="M24 27q3-1.5 6 0M34 27q3-1.5 6 0" stroke="#5B3A22" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M27.5 38q4.5 3.5 9 0" stroke="#26233A" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M19 32q-1-20 13-20t13 20q-3-10-13-9.5T19 32z" fill="#5B3A22"/><circle cx="23.5" cy="37" r="2.4" fill="#F28B9D" opacity="0.55"/><circle cx="40.5" cy="37" r="2.4" fill="#F28B9D" opacity="0.55"/></symbol>
+  <symbol id="av-d-hw-f-scrubs-blond" viewBox="0 0 64 64"><path d="M16 52V28q0-18 16-18t16 18v24q-6 4-16 4t-16-4z" fill="#E9C25A"/><path d="M6 70q0-22 26-22t26 22z" fill="#3E86D6"/><path d="M25 48l7 8 7-8" stroke="#2A63A8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M25 48l7 8 7-8q-3-1.5-7-1.5T25 48z" fill="#E4AE85" opacity=".9"/><path d="M23.5 47q-1.5 8 4 12M40.5 47q1.5 8-3 11" stroke="#2E3A48" stroke-width="2" stroke-linecap="round" fill="none"/><circle cx="27.5" cy="59.5" r="3.4" fill="#D7DEE6" stroke="#2E3A48" stroke-width="1.4"/><rect x="26" y="38" width="12" height="12" fill="#E4AE85"/><circle cx="19" cy="31" r="3.4" fill="#F2C6A0"/><circle cx="45" cy="31" r="3.4" fill="#F2C6A0"/><ellipse cx="32" cy="30" rx="13.5" ry="15.5" fill="#F2C6A0"/><circle cx="27" cy="31" r="2" fill="#26233A"/><circle cx="37" cy="31" r="2" fill="#26233A"/><path d="M24 27q3-1.5 6 0M34 27q3-1.5 6 0" stroke="#E9C25A" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M27.5 38q4.5 3.5 9 0" stroke="#26233A" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M19 32q-1-20 13-20t13 20q-3-10-13-9.5T19 32z" fill="#E9C25A"/><circle cx="23.5" cy="37" r="2.4" fill="#F28B9D" opacity="0.55"/><circle cx="40.5" cy="37" r="2.4" fill="#F28B9D" opacity="0.55"/></symbol>
+  <symbol id="av-d-hw-f-scrubs-red" viewBox="0 0 64 64"><path d="M16 52V28q0-18 16-18t16 18v24q-6 4-16 4t-16-4z" fill="#D4612B"/><path d="M6 70q0-22 26-22t26 22z" fill="#3E86D6"/><path d="M25 48l7 8 7-8" stroke="#2A63A8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M25 48l7 8 7-8q-3-1.5-7-1.5T25 48z" fill="#E4AE85" opacity=".9"/><path d="M23.5 47q-1.5 8 4 12M40.5 47q1.5 8-3 11" stroke="#2E3A48" stroke-width="2" stroke-linecap="round" fill="none"/><circle cx="27.5" cy="59.5" r="3.4" fill="#D7DEE6" stroke="#2E3A48" stroke-width="1.4"/><rect x="26" y="38" width="12" height="12" fill="#E4AE85"/><circle cx="19" cy="31" r="3.4" fill="#F2C6A0"/><circle cx="45" cy="31" r="3.4" fill="#F2C6A0"/><ellipse cx="32" cy="30" rx="13.5" ry="15.5" fill="#F2C6A0"/><circle cx="27" cy="31" r="2" fill="#26233A"/><circle cx="37" cy="31" r="2" fill="#26233A"/><path d="M24 27q3-1.5 6 0M34 27q3-1.5 6 0" stroke="#D4612B" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M27.5 38q4.5 3.5 9 0" stroke="#26233A" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M19 32q-1-20 13-20t13 20q-3-10-13-9.5T19 32z" fill="#D4612B"/><circle cx="23.5" cy="37" r="2.4" fill="#F28B9D" opacity="0.55"/><circle cx="40.5" cy="37" r="2.4" fill="#F28B9D" opacity="0.55"/></symbol>
+  <symbol id="av-d-hw-f-scrubs-brown" viewBox="0 0 64 64"><path d="M16 52V28q0-18 16-18t16 18v24q-6 4-16 4t-16-4z" fill="#5B3A22"/><path d="M6 70q0-22 26-22t26 22z" fill="#3E86D6"/><path d="M25 48l7 8 7-8" stroke="#2A63A8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M25 48l7 8 7-8q-3-1.5-7-1.5T25 48z" fill="#E4AE85" opacity=".9"/><path d="M23.5 47q-1.5 8 4 12M40.5 47q1.5 8-3 11" stroke="#2E3A48" stroke-width="2" stroke-linecap="round" fill="none"/><circle cx="27.5" cy="59.5" r="3.4" fill="#D7DEE6" stroke="#2E3A48" stroke-width="1.4"/><rect x="26" y="38" width="12" height="12" fill="#E4AE85"/><circle cx="19" cy="31" r="3.4" fill="#F2C6A0"/><circle cx="45" cy="31" r="3.4" fill="#F2C6A0"/><ellipse cx="32" cy="30" rx="13.5" ry="15.5" fill="#F2C6A0"/><circle cx="27" cy="31" r="2" fill="#26233A"/><circle cx="37" cy="31" r="2" fill="#26233A"/><path d="M24 27q3-1.5 6 0M34 27q3-1.5 6 0" stroke="#5B3A22" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M27.5 38q4.5 3.5 9 0" stroke="#26233A" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M19 32q-1-20 13-20t13 20q-3-10-13-9.5T19 32z" fill="#5B3A22"/><circle cx="23.5" cy="37" r="2.4" fill="#F28B9D" opacity="0.55"/><circle cx="40.5" cy="37" r="2.4" fill="#F28B9D" opacity="0.55"/></symbol>
+  <symbol id="av-d-baby-blond" viewBox="0 0 64 64"><circle cx="32" cy="38" r="25" fill="#FFF3E2"/><path d="M14 47q18 8 36 0" stroke="#E9DCC7" stroke-width="2.2" stroke-linecap="round" fill="none"/><path d="M12 39q6-6 10 0M42 39q4-6 10 0" stroke="#E9DCC7" stroke-width="2.2" stroke-linecap="round" fill="none"/><circle cx="32" cy="34" r="14" fill="#F2C6A0"/><path d="M30 21q1-5 5-4M33 20q2-3 5-2" stroke="#E9C25A" stroke-width="2.4" stroke-linecap="round" fill="none"/><path d="M25 34q2.5 2.5 5 0M34 34q2.5 2.5 5 0" stroke="#26233A" stroke-width="1.8" stroke-linecap="round" fill="none"/><circle cx="23" cy="39" r="2.6" fill="#F28B9D" opacity=".6"/><circle cx="41" cy="39" r="2.6" fill="#F28B9D" opacity=".6"/><circle cx="32" cy="40.5" r="1.8" fill="#D9737F"/></symbol>
+  <symbol id="av-d-baby-red" viewBox="0 0 64 64"><circle cx="32" cy="38" r="25" fill="#FFF3E2"/><path d="M14 47q18 8 36 0" stroke="#E9DCC7" stroke-width="2.2" stroke-linecap="round" fill="none"/><path d="M12 39q6-6 10 0M42 39q4-6 10 0" stroke="#E9DCC7" stroke-width="2.2" stroke-linecap="round" fill="none"/><circle cx="32" cy="34" r="14" fill="#F2C6A0"/><path d="M30 21q1-5 5-4M33 20q2-3 5-2" stroke="#D4612B" stroke-width="2.4" stroke-linecap="round" fill="none"/><path d="M25 34q2.5 2.5 5 0M34 34q2.5 2.5 5 0" stroke="#26233A" stroke-width="1.8" stroke-linecap="round" fill="none"/><circle cx="23" cy="39" r="2.6" fill="#F28B9D" opacity=".6"/><circle cx="41" cy="39" r="2.6" fill="#F28B9D" opacity=".6"/><circle cx="32" cy="40.5" r="1.8" fill="#D9737F"/></symbol>
+  <symbol id="av-d-baby-brown" viewBox="0 0 64 64"><circle cx="32" cy="38" r="25" fill="#FFF3E2"/><path d="M14 47q18 8 36 0" stroke="#E9DCC7" stroke-width="2.2" stroke-linecap="round" fill="none"/><path d="M12 39q6-6 10 0M42 39q4-6 10 0" stroke="#E9DCC7" stroke-width="2.2" stroke-linecap="round" fill="none"/><circle cx="32" cy="34" r="14" fill="#F2C6A0"/><path d="M30 21q1-5 5-4M33 20q2-3 5-2" stroke="#5B3A22" stroke-width="2.4" stroke-linecap="round" fill="none"/><path d="M25 34q2.5 2.5 5 0M34 34q2.5 2.5 5 0" stroke="#26233A" stroke-width="1.8" stroke-linecap="round" fill="none"/><circle cx="23" cy="39" r="2.6" fill="#F28B9D" opacity=".6"/><circle cx="41" cy="39" r="2.6" fill="#F28B9D" opacity=".6"/><circle cx="32" cy="40.5" r="1.8" fill="#D9737F"/></symbol>
+  <symbol id="av-d-toddler-blond" viewBox="0 0 64 64"><path d="M6 70q0-22 26-22t26 22z" fill="#F4B942"/><path d="M9 57q23-8 46 0" stroke="#FFF3E2" stroke-width="3.5" fill="none"/><rect x="26" y="38" width="12" height="12" fill="#E4AE85"/><circle cx="18.5" cy="32" r="3.2" fill="#F2C6A0"/><circle cx="45.5" cy="32" r="3.2" fill="#F2C6A0"/><circle cx="32" cy="30" r="15" fill="#F2C6A0"/><path d="M29 17q0-6 5-6M35 16q-1-5 3-6" stroke="#E9C25A" stroke-width="3" stroke-linecap="round" fill="none"/><circle cx="26.5" cy="31" r="2.6" fill="#26233A"/><circle cx="37.5" cy="31" r="2.6" fill="#26233A"/><circle cx="27.5" cy="30" r=".9" fill="#fff"/><circle cx="38.5" cy="30" r=".9" fill="#fff"/><circle cx="22" cy="36.5" r="2.8" fill="#F28B9D" opacity=".6"/><circle cx="42" cy="36.5" r="2.8" fill="#F28B9D" opacity=".6"/><path d="M27 38q5 4.5 10 0z" fill="#26233A"/><path d="M30 38.4h4v1.8h-4z" fill="#fff"/></symbol>
+  <symbol id="av-d-toddler-red" viewBox="0 0 64 64"><path d="M6 70q0-22 26-22t26 22z" fill="#F4B942"/><path d="M9 57q23-8 46 0" stroke="#FFF3E2" stroke-width="3.5" fill="none"/><rect x="26" y="38" width="12" height="12" fill="#E4AE85"/><circle cx="18.5" cy="32" r="3.2" fill="#F2C6A0"/><circle cx="45.5" cy="32" r="3.2" fill="#F2C6A0"/><circle cx="32" cy="30" r="15" fill="#F2C6A0"/><path d="M29 17q0-6 5-6M35 16q-1-5 3-6" stroke="#D4612B" stroke-width="3" stroke-linecap="round" fill="none"/><circle cx="26.5" cy="31" r="2.6" fill="#26233A"/><circle cx="37.5" cy="31" r="2.6" fill="#26233A"/><circle cx="27.5" cy="30" r=".9" fill="#fff"/><circle cx="38.5" cy="30" r=".9" fill="#fff"/><circle cx="22" cy="36.5" r="2.8" fill="#F28B9D" opacity=".6"/><circle cx="42" cy="36.5" r="2.8" fill="#F28B9D" opacity=".6"/><path d="M27 38q5 4.5 10 0z" fill="#26233A"/><path d="M30 38.4h4v1.8h-4z" fill="#fff"/></symbol>
+  <symbol id="av-d-toddler-brown" viewBox="0 0 64 64"><path d="M6 70q0-22 26-22t26 22z" fill="#F4B942"/><path d="M9 57q23-8 46 0" stroke="#FFF3E2" stroke-width="3.5" fill="none"/><rect x="26" y="38" width="12" height="12" fill="#E4AE85"/><circle cx="18.5" cy="32" r="3.2" fill="#F2C6A0"/><circle cx="45.5" cy="32" r="3.2" fill="#F2C6A0"/><circle cx="32" cy="30" r="15" fill="#F2C6A0"/><path d="M29 17q0-6 5-6M35 16q-1-5 3-6" stroke="#5B3A22" stroke-width="3" stroke-linecap="round" fill="none"/><circle cx="26.5" cy="31" r="2.6" fill="#26233A"/><circle cx="37.5" cy="31" r="2.6" fill="#26233A"/><circle cx="27.5" cy="30" r=".9" fill="#fff"/><circle cx="38.5" cy="30" r=".9" fill="#fff"/><circle cx="22" cy="36.5" r="2.8" fill="#F28B9D" opacity=".6"/><circle cx="42" cy="36.5" r="2.8" fill="#F28B9D" opacity=".6"/><path d="M27 38q5 4.5 10 0z" fill="#26233A"/><path d="M30 38.4h4v1.8h-4z" fill="#fff"/></symbol>
+  <symbol id="av-d-girl-blond" viewBox="0 0 64 64"><circle cx="14" cy="37" r="6.5" fill="#E9C25A"/><circle cx="50" cy="37" r="6.5" fill="#E9C25A"/><path d="M6 70q0-22 26-22t26 22z" fill="#E86FA2"/><path d="M9 57q23-8 46 0" stroke="#FFF3E2" stroke-width="3.5" fill="none"/><rect x="26" y="38" width="12" height="12" fill="#E4AE85"/><circle cx="18.5" cy="32" r="3.2" fill="#F2C6A0"/><circle cx="45.5" cy="32" r="3.2" fill="#F2C6A0"/><circle cx="32" cy="30" r="15" fill="#F2C6A0"/><path d="M17 31q0-17 15-17t15 17q-4-8-15-8t-15 8z" fill="#E9C25A"/><path d="M43 20l6-4-1 6 4 3-6 1z" fill="#FF6F9C"/><circle cx="26.5" cy="32" r="2.6" fill="#26233A"/><circle cx="37.5" cy="32" r="2.6" fill="#26233A"/><circle cx="27.5" cy="31" r=".9" fill="#fff"/><circle cx="38.5" cy="31" r=".9" fill="#fff"/><circle cx="22" cy="37.5" r="2.8" fill="#F28B9D" opacity=".6"/><circle cx="42" cy="37.5" r="2.8" fill="#F28B9D" opacity=".6"/><path d="M27.5 39q4.5 4 9 0" stroke="#26233A" stroke-width="1.7" stroke-linecap="round" fill="none"/></symbol>
+  <symbol id="av-d-girl-red" viewBox="0 0 64 64"><circle cx="14" cy="37" r="6.5" fill="#D4612B"/><circle cx="50" cy="37" r="6.5" fill="#D4612B"/><path d="M6 70q0-22 26-22t26 22z" fill="#E86FA2"/><path d="M9 57q23-8 46 0" stroke="#FFF3E2" stroke-width="3.5" fill="none"/><rect x="26" y="38" width="12" height="12" fill="#E4AE85"/><circle cx="18.5" cy="32" r="3.2" fill="#F2C6A0"/><circle cx="45.5" cy="32" r="3.2" fill="#F2C6A0"/><circle cx="32" cy="30" r="15" fill="#F2C6A0"/><path d="M17 31q0-17 15-17t15 17q-4-8-15-8t-15 8z" fill="#D4612B"/><path d="M43 20l6-4-1 6 4 3-6 1z" fill="#FF6F9C"/><circle cx="26.5" cy="32" r="2.6" fill="#26233A"/><circle cx="37.5" cy="32" r="2.6" fill="#26233A"/><circle cx="27.5" cy="31" r=".9" fill="#fff"/><circle cx="38.5" cy="31" r=".9" fill="#fff"/><circle cx="22" cy="37.5" r="2.8" fill="#F28B9D" opacity=".6"/><circle cx="42" cy="37.5" r="2.8" fill="#F28B9D" opacity=".6"/><path d="M27.5 39q4.5 4 9 0" stroke="#26233A" stroke-width="1.7" stroke-linecap="round" fill="none"/></symbol>
+  <symbol id="av-d-girl-brown" viewBox="0 0 64 64"><circle cx="14" cy="37" r="6.5" fill="#5B3A22"/><circle cx="50" cy="37" r="6.5" fill="#5B3A22"/><path d="M6 70q0-22 26-22t26 22z" fill="#E86FA2"/><path d="M9 57q23-8 46 0" stroke="#FFF3E2" stroke-width="3.5" fill="none"/><rect x="26" y="38" width="12" height="12" fill="#E4AE85"/><circle cx="18.5" cy="32" r="3.2" fill="#F2C6A0"/><circle cx="45.5" cy="32" r="3.2" fill="#F2C6A0"/><circle cx="32" cy="30" r="15" fill="#F2C6A0"/><path d="M17 31q0-17 15-17t15 17q-4-8-15-8t-15 8z" fill="#5B3A22"/><path d="M43 20l6-4-1 6 4 3-6 1z" fill="#FF6F9C"/><circle cx="26.5" cy="32" r="2.6" fill="#26233A"/><circle cx="37.5" cy="32" r="2.6" fill="#26233A"/><circle cx="27.5" cy="31" r=".9" fill="#fff"/><circle cx="38.5" cy="31" r=".9" fill="#fff"/><circle cx="22" cy="37.5" r="2.8" fill="#F28B9D" opacity=".6"/><circle cx="42" cy="37.5" r="2.8" fill="#F28B9D" opacity=".6"/><path d="M27.5 39q4.5 4 9 0" stroke="#26233A" stroke-width="1.7" stroke-linecap="round" fill="none"/></symbol>
+  <symbol id="av-d-cat-orange" viewBox="0 0 64 64"><path d="M13 36 15 9l19 15z" fill="#F0A24C"/><path d="M51 36 49 9 30 24z" fill="#F0A24C"/><path d="M17.5 30 18.5 15l11 9z" fill="#F7B9C4"/><path d="M46.5 30 45.5 15l-11 9z" fill="#F7B9C4"/><circle cx="32" cy="38" r="22" fill="#F5AC55"/><path d="M24 19q4 3 8 0M31 17.5v6M36 19q2 3 5 1" stroke="#D68533" stroke-width="3" stroke-linecap="round" fill="none"/><ellipse cx="32" cy="47" rx="10" ry="6.5" fill="#FFF3E2"/><ellipse cx="24" cy="37" rx="3.2" ry="3.8" fill="#26233A"/><ellipse cx="40" cy="37" rx="3.2" ry="3.8" fill="#26233A"/><circle cx="25" cy="35.6" r="1" fill="#fff"/><circle cx="41" cy="35.6" r="1" fill="#fff"/><path d="M29.5 44h5l-2.5 2.6z" fill="#E88A9A"/><path d="M32 46.6v1.6M28.5 49.5q3.5 2.5 7 0" stroke="#26233A" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M6 43l14 2M6 50l14-2M58 43l-14 2M58 50l-14-2" stroke="#26233A" stroke-width="1.5" stroke-linecap="round" opacity=".55"/></symbol>
+  <symbol id="av-d-cat-grey" viewBox="0 0 64 64"><path d="M13 36 15 9l19 15z" fill="#9AA0AC"/><path d="M51 36 49 9 30 24z" fill="#9AA0AC"/><path d="M17.5 30 18.5 15l11 9z" fill="#F7B9C4"/><path d="M46.5 30 45.5 15l-11 9z" fill="#F7B9C4"/><circle cx="32" cy="38" r="22" fill="#A9AFBA"/><path d="M24 19q4 3 8 0M31 17.5v6M36 19q2 3 5 1" stroke="#7C838F" stroke-width="3" stroke-linecap="round" fill="none"/><ellipse cx="32" cy="47" rx="10" ry="6.5" fill="#FFF3E2"/><ellipse cx="24" cy="37" rx="3.2" ry="3.8" fill="#26233A"/><ellipse cx="40" cy="37" rx="3.2" ry="3.8" fill="#26233A"/><circle cx="25" cy="35.6" r="1" fill="#fff"/><circle cx="41" cy="35.6" r="1" fill="#fff"/><path d="M29.5 44h5l-2.5 2.6z" fill="#E88A9A"/><path d="M32 46.6v1.6M28.5 49.5q3.5 2.5 7 0" stroke="#26233A" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M6 43l14 2M6 50l14-2M58 43l-14 2M58 50l-14-2" stroke="#26233A" stroke-width="1.5" stroke-linecap="round" opacity=".55"/></symbol>
+  <symbol id="av-d-cat-black" viewBox="0 0 64 64"><path d="M13 36 15 9l19 15z" fill="#2E2E3A"/><path d="M51 36 49 9 30 24z" fill="#2E2E3A"/><path d="M17.5 30 18.5 15l11 9z" fill="#F7B9C4"/><path d="M46.5 30 45.5 15l-11 9z" fill="#F7B9C4"/><circle cx="32" cy="38" r="22" fill="#3A3A48"/><ellipse cx="32" cy="47" rx="10" ry="6.5" fill="#FFF3E2"/><ellipse cx="24" cy="37" rx="3.2" ry="3.8" fill="#C9D64A"/><ellipse cx="40" cy="37" rx="3.2" ry="3.8" fill="#C9D64A"/><circle cx="25" cy="35.6" r="1" fill="#26233A"/><circle cx="41" cy="35.6" r="1" fill="#26233A"/><path d="M29.5 44h5l-2.5 2.6z" fill="#E88A9A"/><path d="M32 46.6v1.6M28.5 49.5q3.5 2.5 7 0" stroke="#26233A" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M6 43l14 2M6 50l14-2M58 43l-14 2M58 50l-14-2" stroke="#26233A" stroke-width="1.5" stroke-linecap="round" opacity=".55"/></symbol>
+  <symbol id="av-d-cat-calico" viewBox="0 0 64 64"><path d="M13 36 15 9l19 15z" fill="#EBE2D2"/><path d="M51 36 49 9 30 24z" fill="#EBE2D2"/><path d="M17.5 30 18.5 15l11 9z" fill="#F7B9C4"/><path d="M46.5 30 45.5 15l-11 9z" fill="#F7B9C4"/><circle cx="32" cy="38" r="22" fill="#F6F0E4"/><path d="M14 30q6-8 14-3-3 8-14 3z" fill="#F0A24C"/><path d="M38 24q9-4 14 6-8 4-14-6z" fill="#3A3A48"/><path d="M20 47q4-3 7 0-3 4-7 0z" fill="#3A3A48"/><ellipse cx="32" cy="47" rx="10" ry="6.5" fill="#FFF3E2"/><ellipse cx="24" cy="37" rx="3.2" ry="3.8" fill="#26233A"/><ellipse cx="40" cy="37" rx="3.2" ry="3.8" fill="#26233A"/><circle cx="25" cy="35.6" r="1" fill="#fff"/><circle cx="41" cy="35.6" r="1" fill="#fff"/><path d="M29.5 44h5l-2.5 2.6z" fill="#E88A9A"/><path d="M32 46.6v1.6M28.5 49.5q3.5 2.5 7 0" stroke="#26233A" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M6 43l14 2M6 50l14-2M58 43l-14 2M58 50l-14-2" stroke="#26233A" stroke-width="1.5" stroke-linecap="round" opacity=".55"/></symbol>
+  <symbol id="av-d-dog-brown" viewBox="0 0 64 64"><rect x="3" y="21" width="15" height="31" rx="7.5" fill="#8A5634"/><rect x="46" y="21" width="15" height="31" rx="7.5" fill="#8A5634"/><circle cx="32" cy="36" r="22" fill="#C98B5A"/><ellipse cx="32" cy="45" rx="12" ry="9" fill="#FFF3E2"/><ellipse cx="32" cy="41.5" rx="4.6" ry="3.6" fill="#26233A"/><circle cx="30.5" cy="40.5" r="1.1" fill="#fff"/><path d="M32 45v3.5M26.5 49q5.5 4.5 11 0" stroke="#26233A" stroke-width="1.7" stroke-linecap="round" fill="none"/><path d="M28.5 50.5q3.5 4 7 0z" fill="#F28B9D"/><circle cx="23" cy="31" r="3.2" fill="#26233A"/><circle cx="41" cy="31" r="3.2" fill="#26233A"/><circle cx="24.2" cy="29.8" r="1.1" fill="#fff"/><circle cx="42.2" cy="29.8" r="1.1" fill="#fff"/><path d="M18 24q4-2 8-1M38 23q4-1 8 1" stroke="#8A5634" stroke-width="2.2" stroke-linecap="round" fill="none"/></symbol>
+  <symbol id="av-d-dog-golden" viewBox="0 0 64 64"><rect x="3" y="21" width="15" height="31" rx="7.5" fill="#D19A48"/><rect x="46" y="21" width="15" height="31" rx="7.5" fill="#D19A48"/><circle cx="32" cy="36" r="22" fill="#E8B86D"/><ellipse cx="32" cy="45" rx="12" ry="9" fill="#FFF3E2"/><ellipse cx="32" cy="41.5" rx="4.6" ry="3.6" fill="#26233A"/><circle cx="30.5" cy="40.5" r="1.1" fill="#fff"/><path d="M32 45v3.5M26.5 49q5.5 4.5 11 0" stroke="#26233A" stroke-width="1.7" stroke-linecap="round" fill="none"/><path d="M28.5 50.5q3.5 4 7 0z" fill="#F28B9D"/><circle cx="23" cy="31" r="3.2" fill="#26233A"/><circle cx="41" cy="31" r="3.2" fill="#26233A"/><circle cx="24.2" cy="29.8" r="1.1" fill="#fff"/><circle cx="42.2" cy="29.8" r="1.1" fill="#fff"/><path d="M18 24q4-2 8-1M38 23q4-1 8 1" stroke="#D19A48" stroke-width="2.2" stroke-linecap="round" fill="none"/></symbol>
+  <symbol id="av-d-dog-black" viewBox="0 0 64 64"><rect x="3" y="21" width="15" height="31" rx="7.5" fill="#2C2C36"/><rect x="46" y="21" width="15" height="31" rx="7.5" fill="#2C2C36"/><circle cx="32" cy="36" r="22" fill="#3B3B47"/><ellipse cx="32" cy="45" rx="12" ry="9" fill="#C9A27A"/><ellipse cx="32" cy="41.5" rx="4.6" ry="3.6" fill="#26233A"/><circle cx="30.5" cy="40.5" r="1.1" fill="#fff"/><path d="M32 45v3.5M26.5 49q5.5 4.5 11 0" stroke="#26233A" stroke-width="1.7" stroke-linecap="round" fill="none"/><path d="M28.5 50.5q3.5 4 7 0z" fill="#F28B9D"/><circle cx="23" cy="31" r="4" fill="#FFFFFF"/><circle cx="41" cy="31" r="4" fill="#FFFFFF"/><circle cx="23" cy="31" r="3.2" fill="#26233A"/><circle cx="41" cy="31" r="3.2" fill="#26233A"/><circle cx="24.2" cy="29.8" r="1.1" fill="#fff"/><circle cx="42.2" cy="29.8" r="1.1" fill="#fff"/><path d="M18 24q4-2 8-1M38 23q4-1 8 1" stroke="#5A5A68" stroke-width="2.2" stroke-linecap="round" fill="none"/></symbol>
+  <symbol id="av-d-dog-spotted" viewBox="0 0 64 64"><rect x="3" y="21" width="15" height="31" rx="7.5" fill="#3B3B47"/><rect x="46" y="21" width="15" height="31" rx="7.5" fill="#DCD3C5"/><circle cx="32" cy="36" r="22" fill="#F3EEE4"/><circle cx="41" cy="31" r="7.5" fill="#3B3B47"/><ellipse cx="32" cy="45" rx="12" ry="9" fill="#FFF3E2"/><ellipse cx="32" cy="41.5" rx="4.6" ry="3.6" fill="#26233A"/><circle cx="30.5" cy="40.5" r="1.1" fill="#fff"/><path d="M32 45v3.5M26.5 49q5.5 4.5 11 0" stroke="#26233A" stroke-width="1.7" stroke-linecap="round" fill="none"/><path d="M28.5 50.5q3.5 4 7 0z" fill="#F28B9D"/><circle cx="23" cy="31" r="4" fill="#FFFFFF"/><circle cx="41" cy="31" r="4" fill="#FFFFFF"/><circle cx="23" cy="31" r="3.2" fill="#26233A"/><circle cx="41" cy="31" r="3.2" fill="#26233A"/><circle cx="24.2" cy="29.8" r="1.1" fill="#fff"/><circle cx="42.2" cy="29.8" r="1.1" fill="#fff"/><path d="M18 24q4-2 8-1M38 23q4-1 8 1" stroke="#8A8A96" stroke-width="2.2" stroke-linecap="round" fill="none"/></symbol>
+  <symbol id="av-d-fish" viewBox="0 0 64 64"><circle cx="53" cy="16" r="3" fill="#FFF3E2" opacity=".85"/><circle cx="58" cy="9" r="1.8" fill="#FFF3E2" opacity=".7"/><path d="M18 33 4 19q7 14 0 28z" fill="#FF8C3A"/><path d="M23 24q9-13 18-1z" fill="#FF8C3A"/><ellipse cx="33" cy="35" rx="19" ry="13.5" fill="#FFA24A"/><ellipse cx="35" cy="40.5" rx="12" ry="5.5" fill="#FFD48F"/><ellipse cx="29" cy="40" rx="6" ry="3.2" transform="rotate(-25 29 40)" fill="#FF8C3A"/><circle cx="43" cy="31.5" r="4.2" fill="#FFF3E2"/><circle cx="44" cy="31.5" r="2.4" fill="#26233A"/><circle cx="45" cy="30.5" r=".8" fill="#fff"/><path d="M51 36.5q-2 1.5-4 0" stroke="#26233A" stroke-width="1.5" stroke-linecap="round" fill="none"/><path d="M30 27q3 7 0 14M37 26q3 8 0 16" stroke="#FF8C3A" stroke-width="1.6" stroke-linecap="round" fill="none" opacity=".8"/></symbol>
+  <symbol id="av-d-turtle" viewBox="0 0 64 64"><circle cx="32" cy="17" r="8.5" fill="#8BD48A"/><circle cx="29" cy="15.5" r="1.7" fill="#26233A"/><circle cx="35" cy="15.5" r="1.7" fill="#26233A"/><path d="M29.5 20q2.5 2 5 0" stroke="#26233A" stroke-width="1.4" stroke-linecap="round" fill="none"/><circle cx="12" cy="49" r="6" fill="#8BD48A"/><circle cx="52" cy="49" r="6" fill="#8BD48A"/><path d="M9 43a23 22 0 0 1 46 0z" fill="#56B266"/><path d="M9 43h46v3a6 6 0 0 1-6 6H15a6 6 0 0 1-6-6z" fill="#3B8F4C"/><path d="M32 24l6 3.5v7L32 38l-6-3.5v-7z" fill="#82CE8C"/><path d="M20 31l5 3v6l-5 3-5-3v-6zM44 31l5 3v6l-5 3-5-3v-6z" fill="#82CE8C"/></symbol>
+  <symbol id="av-d-hamster" viewBox="0 0 64 64"><circle cx="16" cy="18" r="8" fill="#D9A878"/><circle cx="48" cy="18" r="8" fill="#D9A878"/><circle cx="16" cy="18" r="4.2" fill="#F5B5BF"/><circle cx="48" cy="18" r="4.2" fill="#F5B5BF"/><circle cx="32" cy="36" r="22" fill="#EBC59E"/><circle cx="19" cy="44" r="9" fill="#FFF3E2"/><circle cx="45" cy="44" r="9" fill="#FFF3E2"/><ellipse cx="32" cy="45" rx="7" ry="5" fill="#FFF3E2"/><circle cx="25" cy="33" r="3" fill="#26233A"/><circle cx="39" cy="33" r="3" fill="#26233A"/><circle cx="26.1" cy="31.9" r="1" fill="#fff"/><circle cx="40.1" cy="31.9" r="1" fill="#fff"/><ellipse cx="32" cy="41" rx="2.6" ry="2" fill="#E88A9A"/><path d="M32 43v2M29 46.5q3 2.2 6 0" stroke="#26233A" stroke-width="1.5" stroke-linecap="round" fill="none"/><path d="M7 42l9 1.5M7 48l9-1M57 42l-9 1.5M57 48l-9-1" stroke="#26233A" stroke-width="1.4" stroke-linecap="round" opacity=".5"/></symbol>
+  <symbol id="av-d-trex" viewBox="0 0 64 64"><path d="M12 42V26q0-14 16-14h14q14 0 16 14v8H30q-8 0-10 8z" fill="#5FB35A"/><path d="M58 40v6q0 8-10 8H32q-6 0-6-6v-4q0-4 4-4z" fill="#4A9C48"/><path d="M30 34h28v6H30z" fill="#B23A57"/><path d="M34 34l3 6 3-6zM42 34l3 6 3-6zM50 34l3 6 3-6z" fill="#FFF7EA"/><path d="M36 44l3-5 3 5zM46 44l3-5 3 5z" fill="#FFF7EA"/><path d="M16 44q-3 8 5 9" stroke="#4A9C48" stroke-width="5" stroke-linecap="round" fill="none"/><circle cx="27" cy="24" r="4.6" fill="#FFF7EA"/><circle cx="28" cy="24" r="2.6" fill="#26233A"/><circle cx="29" cy="23" r=".9" fill="#fff"/><path d="M21 18q4-3 9-1" stroke="#3E8A3C" stroke-width="2.4" stroke-linecap="round" fill="none"/><circle cx="52" cy="21" r="1.8" fill="#3E8A3C"/></symbol>
+  <symbol id="av-d-bronto" viewBox="0 0 64 64"><path d="M8 46q-6-4-6-14" stroke="#62AFC9" stroke-width="7" stroke-linecap="round" fill="none"/><rect x="12" y="50" width="9" height="14" rx="4" fill="#4E95AC"/><rect x="30" y="50" width="9" height="14" rx="4" fill="#4E95AC"/><ellipse cx="25" cy="45" rx="19" ry="12" fill="#62AFC9"/><ellipse cx="25" cy="50" rx="13" ry="5" fill="#9BDCEA" opacity=".8"/><path d="M36 42q10-6 13-26" stroke="#62AFC9" stroke-width="10" stroke-linecap="round" fill="none"/><ellipse cx="50" cy="13" rx="8" ry="6" fill="#62AFC9"/><circle cx="52.5" cy="11.5" r="1.8" fill="#26233A"/><circle cx="53.2" cy="10.8" r=".6" fill="#fff"/><path d="M53 16q2 1 4-.5" stroke="#26233A" stroke-width="1.3" stroke-linecap="round" fill="none"/><circle cx="19" cy="41" r="3" fill="#8FD3E6"/><circle cx="29" cy="39" r="2.2" fill="#8FD3E6"/><circle cx="14" cy="47" r="2" fill="#8FD3E6"/></symbol>
 </svg>
 
 <div class="app" id="app">
@@ -1050,13 +988,72 @@ var n=(255&r[e])<<8|255&r[e+1];if(33088<=n&&n<=40956)n-=33088;else{if(!(57408<=n
 const STORAGE_KEY = 'familyhub.v2';                       // where the phone keeps this app's data
 const STORAGE_KEY_V1 = 'familyhub.v1';                    // the first version's data — copied over the first time v2 opens
 const MEMBER_COLORS = ['#2C4FD6', '#E4572E', '#23935F', '#8E44AD', '#1B9AAA', '#B9820E'];
-// the pictures a member can wear instead of their initial (drawn in the icon sprite as av-<id>)
+// The pictures a member can wear instead of their initial, in the order the Family screen shows them: People, then Animals, then Things.
+// Some are the phone's own emoji (the same pictures as in Messages — Apple's on an iPhone); the rest are drawn in the icon sprite
+// as av-<id> (people in blond / red / brown hair, health workers in a white coat or blue scrubs, four cats, four dogs, and the earlier animals).
 const MEMBER_PICS = [
-  { id: '',        label: 'Initial' },
-  { id: 'cat',     label: 'Cat' },      { id: 'dog',     label: 'Dog' },          { id: 'fish',   label: 'Goldfish' },
-  { id: 'turtle',  label: 'Turtle' },   { id: 'hamster', label: 'Hamster' },      { id: 'trex',   label: 'T-Rex' },
-  { id: 'bronto',  label: 'Brontosaurus' }, { id: 'man',  label: 'Man' },         { id: 'woman',  label: 'Woman' },
-  { id: 'baby',    label: 'Newborn' },  { id: 'toddler', label: 'Toddler' },
+  { id: '', label: 'Initial', group: 'initial', sub: '', emoji: '' },
+  { id: 'man-blond-e', label: 'Man, blond (emoji)', group: 'people', sub: 'Men', emoji: '👱‍♂️' },
+  { id: 'man-red-e', label: 'Man, red hair (emoji)', group: 'people', sub: 'Men', emoji: '👨‍🦰' },
+  { id: 'man', label: 'Man (emoji)', group: 'people', sub: 'Men', emoji: '👨' },
+  { id: 'd-man-blond', label: 'Man, blond', group: 'people', sub: 'Men', art: true },
+  { id: 'd-man-red', label: 'Man, red hair', group: 'people', sub: 'Men', art: true },
+  { id: 'd-man-brown', label: 'Man, brown hair', group: 'people', sub: 'Men', art: true },
+  { id: 'woman-blond-e', label: 'Woman, blond (emoji)', group: 'people', sub: 'Women', emoji: '👱‍♀️' },
+  { id: 'woman-red-e', label: 'Woman, red hair (emoji)', group: 'people', sub: 'Women', emoji: '👩‍🦰' },
+  { id: 'woman', label: 'Woman (emoji)', group: 'people', sub: 'Women', emoji: '👩' },
+  { id: 'd-woman-blond', label: 'Woman, blond', group: 'people', sub: 'Women', art: true },
+  { id: 'd-woman-red', label: 'Woman, red hair', group: 'people', sub: 'Women', art: true },
+  { id: 'd-woman-brown', label: 'Woman, brown hair', group: 'people', sub: 'Women', art: true },
+  { id: 'nurse-m', label: 'Male health worker (emoji)', group: 'people', sub: 'Health workers', emoji: '👨‍⚕️' },
+  { id: 'd-hw-m-coat-blond', label: 'Male health worker, white coat, blond', group: 'people', sub: 'Health workers', art: true },
+  { id: 'd-hw-m-coat-red', label: 'Male health worker, white coat, red hair', group: 'people', sub: 'Health workers', art: true },
+  { id: 'd-hw-m-coat-brown', label: 'Male health worker, white coat, brown hair', group: 'people', sub: 'Health workers', art: true },
+  { id: 'd-hw-m-scrubs-blond', label: 'Male health worker, blue scrubs, blond', group: 'people', sub: 'Health workers', art: true },
+  { id: 'd-hw-m-scrubs-red', label: 'Male health worker, blue scrubs, red hair', group: 'people', sub: 'Health workers', art: true },
+  { id: 'd-hw-m-scrubs-brown', label: 'Male health worker, blue scrubs, brown hair', group: 'people', sub: 'Health workers', art: true },
+  { id: 'nurse-f', label: 'Female health worker (emoji)', group: 'people', sub: 'Health workers', emoji: '👩‍⚕️' },
+  { id: 'd-hw-f-coat-blond', label: 'Female health worker, white coat, blond', group: 'people', sub: 'Health workers', art: true },
+  { id: 'd-hw-f-coat-red', label: 'Female health worker, white coat, red hair', group: 'people', sub: 'Health workers', art: true },
+  { id: 'd-hw-f-coat-brown', label: 'Female health worker, white coat, brown hair', group: 'people', sub: 'Health workers', art: true },
+  { id: 'd-hw-f-scrubs-blond', label: 'Female health worker, blue scrubs, blond', group: 'people', sub: 'Health workers', art: true },
+  { id: 'd-hw-f-scrubs-red', label: 'Female health worker, blue scrubs, red hair', group: 'people', sub: 'Health workers', art: true },
+  { id: 'd-hw-f-scrubs-brown', label: 'Female health worker, blue scrubs, brown hair', group: 'people', sub: 'Health workers', art: true },
+  { id: 'baby', label: 'Newborn (emoji)', group: 'people', sub: 'Newborns', emoji: '👶' },
+  { id: 'd-baby-blond', label: 'Newborn, blond', group: 'people', sub: 'Newborns', art: true },
+  { id: 'd-baby-red', label: 'Newborn, red hair', group: 'people', sub: 'Newborns', art: true },
+  { id: 'd-baby-brown', label: 'Newborn, brown hair', group: 'people', sub: 'Newborns', art: true },
+  { id: 'toddler', label: 'Toddler (emoji)', group: 'people', sub: 'Toddlers', emoji: '🧒' },
+  { id: 'd-toddler-blond', label: 'Toddler, blond', group: 'people', sub: 'Toddlers', art: true },
+  { id: 'd-toddler-red', label: 'Toddler, red hair', group: 'people', sub: 'Toddlers', art: true },
+  { id: 'd-toddler-brown', label: 'Toddler, brown hair', group: 'people', sub: 'Toddlers', art: true },
+  { id: 'girl', label: 'Toddler girl (emoji)', group: 'people', sub: 'Toddler girls', emoji: '👧' },
+  { id: 'd-girl-blond', label: 'Toddler girl, blond', group: 'people', sub: 'Toddler girls', art: true },
+  { id: 'd-girl-red', label: 'Toddler girl, red hair', group: 'people', sub: 'Toddler girls', art: true },
+  { id: 'd-girl-brown', label: 'Toddler girl, brown hair', group: 'people', sub: 'Toddler girls', art: true },
+  { id: 'cat', label: 'Cat (emoji)', group: 'animals', sub: 'Cats', emoji: '🐱' },
+  { id: 'd-cat-orange', label: 'Orange tabby cat', group: 'animals', sub: 'Cats', art: true },
+  { id: 'd-cat-grey', label: 'Grey tabby cat', group: 'animals', sub: 'Cats', art: true },
+  { id: 'd-cat-black', label: 'Black cat', group: 'animals', sub: 'Cats', art: true },
+  { id: 'd-cat-calico', label: 'Calico cat', group: 'animals', sub: 'Cats', art: true },
+  { id: 'dog', label: 'Dog (emoji)', group: 'animals', sub: 'Dogs', emoji: '🐶' },
+  { id: 'd-dog-brown', label: 'Brown dog', group: 'animals', sub: 'Dogs', art: true },
+  { id: 'd-dog-golden', label: 'Golden dog', group: 'animals', sub: 'Dogs', art: true },
+  { id: 'd-dog-black', label: 'Black dog', group: 'animals', sub: 'Dogs', art: true },
+  { id: 'd-dog-spotted', label: 'Spotted dog', group: 'animals', sub: 'Dogs', art: true },
+  { id: 'fish', label: 'Fish (emoji)', group: 'animals', sub: 'More animals', emoji: '🐠' },
+  { id: 'd-fish', label: 'Goldfish', group: 'animals', sub: 'More animals', art: true },
+  { id: 'turtle', label: 'Turtle (emoji)', group: 'animals', sub: 'More animals', emoji: '🐢' },
+  { id: 'd-turtle', label: 'Turtle', group: 'animals', sub: 'More animals', art: true },
+  { id: 'hamster', label: 'Hamster (emoji)', group: 'animals', sub: 'More animals', emoji: '🐹' },
+  { id: 'd-hamster', label: 'Hamster', group: 'animals', sub: 'More animals', art: true },
+  { id: 'snake', label: 'Snake (emoji)', group: 'animals', sub: 'More animals', emoji: '🐍' },
+  { id: 'trex', label: 'T-Rex (emoji)', group: 'animals', sub: 'More animals', emoji: '🦖' },
+  { id: 'd-trex', label: 'T-Rex', group: 'animals', sub: 'More animals', art: true },
+  { id: 'bronto', label: 'Brontosaurus (emoji)', group: 'animals', sub: 'More animals', emoji: '🦕' },
+  { id: 'd-bronto', label: 'Brontosaurus', group: 'animals', sub: 'More animals', art: true },
+  { id: 'coffee', label: 'Coffee mug', group: 'things', sub: '', emoji: '☕' },
+  { id: 'camera', label: 'Camera', group: 'things', sub: '', emoji: '📷' },
 ];
 const NOTE_COLORS = ['note-1', 'note-2', 'note-3', 'note-4', 'note-5'];
 
@@ -1150,8 +1147,10 @@ function avatar(id, cls = '') {
   return `<span class="av ${cls}" style="--c:${m.color}" title="${esc(m.name)}">${avatarFace(m)}</span>`;
 }
 function avatarFace(m, pic = m.pic) {
-  const known = pic && MEMBER_PICS.some(p => p.id === pic);
-  return known ? `<svg class="pic" aria-hidden="true"><use href="#av-${pic}"/></svg>` : esc(((m.name || '').trim()[0] || '?').toUpperCase());
+  const p = pic && MEMBER_PICS.find(x => x.id === pic);
+  if (p && p.emoji) return `<span class="pic emo" aria-hidden="true">${p.emoji}</span>`;
+  if (p && p.art) return `<svg class="pic art" aria-hidden="true"><use href="#av-${p.id}"/></svg>`;
+  return esc(((m.name || '').trim()[0] || '?').toUpperCase());
 }
 function avatars(ids) { return `<span class="avs">${(ids || []).map(id => avatar(id)).join('')}</span>`; }
 function parseDT(date, time) {           // "2026-09-06" + "17:30" -> a real Date in local time
@@ -1324,7 +1323,8 @@ function renderToday() {
   // --- the living sky, and the upper half that sits straight on it ---
   const period = skyPeriod(), kind = skyKind(w && w.type);
   skyShown = period;
-  const sky = `<div class="sky p-${period} k-${kind}" id="sky" aria-hidden="true"><i class="stars"></i><i class="orb"></i><i class="cl c1"></i><i class="cl c2"></i><i class="cl c3"></i><i class="tint"></i><i class="fade"></i></div>`;
+  const sky = `<div class="sky p-${period} k-${kind}" id="sky" aria-hidden="true"><i class="stars"></i><i class="orb"></i><i class="cl c1"></i><i class="cl c2"></i><i class="cl c3"></i><i class="cl c4"></i><i class="tint"></i></div>`;
+  const darkSky = period === 'night' || kind === 'rain' || kind === 'storm';   // light text on these, so the words stay readable
   const members = state.members.slice(0, 4).map(m => avatar(m.id)).join('');
   const n = (state.captures || []).length;
   const inbox = n ? `<button class="inboxpill" data-act="open-sheet" data-kind="inbox" aria-label="${n} captured item${n === 1 ? '' : 's'} to sort">${icon('inbox')}${n}</button>` : '';
@@ -1342,7 +1342,7 @@ function renderToday() {
         <div class="glassfoot"><button class="avstack famlink" data-act="tab" data-tab="family" aria-label="Family settings">${members || icon('users')}<span>Family</span></button><button class="link" data-act="tab" data-tab="calendar">Calendar</button></div>
       </div>`;
 
-  $('#screen-today').innerHTML = `<div class="home${expandedCardId ? ' expanded' : ''}" id="home">
+  $('#screen-today').innerHTML = `<div class="home${expandedCardId ? ' expanded' : ''}${darkSky ? ' darksky' : ''}" id="home">
     ${sky}
     ${bar}
     <div class="todayview" id="todayview">
@@ -1358,17 +1358,10 @@ function renderToday() {
   </div>`;
   const tv = $('#todayview');
   if (!expandedCardId) tv.style.maxHeight = 'none';
-  sizeSky();
   wireRows($('#screen-today'));
   tickCountdown();
   mountCard();       // the open card's map and place details, if any
   syncGoogle();      // fetch weather / drive times if what we have is stale (does nothing without a key)
-}
-// The sky runs from the top of the screen to a little past the Today row, then fades into the app's ground.
-function sizeSky() {
-  const sky = $('#sky'), tv = $('#todayview'), g = $('#todayview .hero');
-  if (!sky || !tv || !g) return;
-  requestAnimationFrame(() => sky.style.setProperty('--sky-h', `${tv.offsetTop + g.offsetTop + g.offsetHeight + 72}px`));   // the last 72px are the fade, so the Today row sits on solid sky
 }
 // "The Riveras" → "Riveras", so the greeting reads "Good morning, Riveras".
 function familyShort() { return (state.familyName || '').trim().replace(/^the\s+/i, ''); }
@@ -1648,14 +1641,28 @@ function renderBoard() {
   wireRows($('#screen-board'));
 }
 
+// Which members have their picture choices open (plain memory: they fold again the next time the app opens).
+const picsOpen = new Set();
+// The picture choices for one member, in groups (People, Animals, Things) with a small heading for each kind inside a group.
+const PIC_GROUPS = { initial: 'Initial', people: 'People', animals: 'Animals', things: 'Things' };
+function picChoices(m) {
+  let group = null, sub = null, out = '';
+  MEMBER_PICS.forEach(p => {
+    if (p.group !== group) { group = p.group; sub = null; out += `<span class="lbl">${PIC_GROUPS[group] || group}</span>`; }
+    if (p.sub && p.sub !== sub) { sub = p.sub; out += `<span class="sub">${p.sub}</span>`; }
+    const on = (m.pic || '') === p.id;
+    out += `<button class="${on ? 'on' : ''}" data-act="member-pic" data-id="${m.id}" data-pic="${p.id}" aria-label="${p.label}" aria-pressed="${on}"><span class="av" style="--c:${m.color}">${avatarFace(m, p.id)}</span></button>`;
+  });
+  return out;
+}
 function renderFamily() {
-  const rows = state.members.map(m => `<div class="member" data-id="${m.id}">
+  const rows = state.members.map(m => { const open = picsOpen.has(m.id); return `<div class="member${open ? ' open' : ''}" data-id="${m.id}">
       ${avatar(m.id, 'av-lg')}
       <input type="text" value="${esc(m.name)}" data-field="memberName" data-id="${m.id}" aria-label="Name" maxlength="24">
-      <div class="swatches" role="group" aria-label="Color">${MEMBER_COLORS.map(c => `<button class="swatch${m.color === c ? ' on' : ''}" style="background:${c}" data-act="member-color" data-id="${m.id}" data-color="${c}" aria-label="Color ${c}" aria-pressed="${m.color === c}"></button>`).join('')}</div>
+      <div class="swatches" role="group" aria-label="Color">${MEMBER_COLORS.map(c => `<button class="swatch${m.color === c ? ' on' : ''}" style="background:${c}" data-act="member-color" data-id="${m.id}" data-color="${c}" aria-label="Color ${c}" aria-pressed="${m.color === c}"></button>`).join('')}<button class="iconbtn morebtn" data-act="member-more" data-id="${m.id}" aria-expanded="${open}" aria-controls="pics-${m.id}" aria-label="Pictures for ${esc(m.name || 'this member')}">${icon('down')}</button></div>
       <button class="iconbtn" data-act="remove-member" data-id="${m.id}" aria-label="Remove ${esc(m.name)}">${icon('x')}</button>
-      <div class="pics" role="group" aria-label="Picture"><span class="lbl">Picture</span>${MEMBER_PICS.map(p => `<button class="${(m.pic || '') === p.id ? 'on' : ''}" data-act="member-pic" data-id="${m.id}" data-pic="${p.id}" aria-label="${p.label}" aria-pressed="${(m.pic || '') === p.id}"><span class="av" style="--c:${m.color}">${avatarFace(m, p.id)}</span></button>`).join('')}</div>
-    </div>`).join('');
+      <div class="pics" id="pics-${m.id}" role="group" aria-label="Picture">${picChoices(m)}</div>
+    </div>`; }).join('');
   $('#screen-family').innerHTML = `
     <div class="field" style="margin-top:12px"><label for="famName">Family name</label><input type="text" id="famName" value="${esc(state.familyName)}" data-field="familyName" maxlength="40" placeholder="The Smiths"></div>
     <div class="sec"><h2>Members</h2></div>
@@ -1907,6 +1914,13 @@ document.addEventListener('click', e => {
     }
     case 'member-color': { const m = member(id); if (m) { m.color = el.dataset.color; save(); render(); } break; }
     case 'member-pic': { const m = member(id); if (m) { m.pic = el.dataset.pic || ''; save(); haptic(6); render(); } break; }
+    case 'member-more': {                          // the arrow on a member's color line: show or hide the pictures underneath
+      const open = !picsOpen.has(id);
+      if (open) picsOpen.add(id); else picsOpen.delete(id);
+      const row = el.closest('.member'); if (row) row.classList.toggle('open', open);
+      el.setAttribute('aria-expanded', open); haptic(4);
+      break;
+    }
     case 'reset': case 'wipe': {
       // two taps to do something big — no pop-up dialogs
       if (el.dataset.armed) {
@@ -2082,7 +2096,9 @@ function enableWeekSwipe(strip) {
 })();
 
 /* ---------- 7. DYNAMISM ---------- */
-function haptic(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
+// Buzzes are off (Alex's choice, Sep 20, 2026): the calls stay in place so they can be turned back on in one line.
+const HAPTICS = false;
+function haptic(ms) { if (!HAPTICS) return; try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
 
 // The countdown updates four numbers once a second instead of redrawing the whole screen.
 function tickCountdown() {
@@ -2125,11 +2141,9 @@ function toggleToday() {
   const list = $('#todaylist'), btn = $('.todayfold');
   if (list) list.classList.toggle('open', todayOpen);
   if (btn) btn.setAttribute('aria-expanded', todayOpen);
-  setTimeout(sizeSky, 340);
   haptic(6);
 }
 setInterval(() => { if (current === 'today') tickCountdown(); }, 1000);
-addEventListener('resize', () => { if (current === 'today') sizeSky(); });
 
 let toastTimer = null;
 function toast(msg, undo) {
@@ -2138,7 +2152,7 @@ function toast(msg, undo) {
   if (undo) el.querySelector('.undo').addEventListener('click', () => { undo(); el.classList.remove('show'); haptic(8); });
   el.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), undo ? 5000 : 2600);
+  toastTimer = setTimeout(() => el.classList.remove('show'), undo ? 8000 : 4000);   // stays 4 s, or 8 s when there is an Undo
 }
 
 // when the app comes back to the foreground (phone unlocked, tab switched back), refresh what's stale
